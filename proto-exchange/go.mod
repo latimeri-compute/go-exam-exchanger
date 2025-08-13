@@ -1,4 +1,4 @@
-module github.com/latimeri-compute/proto-exchange
+module github.com/latimeri-compute/go-exam-exchanger/proto-exchange
 
 go 1.24.5
 

@@ -3,7 +3,7 @@ package delivery
 import (
 	"context"
 
-	pb "gitgub.com/latimeri-compute/gw-exchanger/internal/delivery/exchange"
+	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/"
 	"go.uber.org/zap"
 )
 

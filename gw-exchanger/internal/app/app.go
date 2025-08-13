@@ -1,8 +1,8 @@
 package app
 
 import (
-	delivery "gitgub.com/latimeri-compute/gw-exchanger/internal/delivery/response"
-	"gitgub.com/latimeri-compute/gw-exchanger/internal/storages"
+	delivery "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/internal/delivery/response"
+	"github.com/latimeri-compute/go-exam-exchanger/proto-exchange/internal/storages"
 	"go.uber.org/zap"
 )
 
