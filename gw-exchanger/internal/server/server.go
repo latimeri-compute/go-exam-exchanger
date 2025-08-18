@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/internal/delivery/exchange"
-	delivery "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/internal/delivery/response"
+	pb "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery/exchange"
+	delivery "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery/response"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )

@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/latimeri-compute/go-exam-exchanger/proto-exchange/internal/server"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/server"
 	"go.uber.org/zap"
 )
 
