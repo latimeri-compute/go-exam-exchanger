@@ -17,6 +17,10 @@ func (db *DB) GetAll() ([]storages.Exchange, error) {
 	return results, nil
 }
 
+func (db *DB) GetRateBetween() {
+	// TODO impplement
+}
+
 /* SELECT
     fv.code AS from_valute_code,
     tv.code AS to_valute_code,

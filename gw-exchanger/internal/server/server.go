@@ -8,8 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	pb "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery/exchange"
-	delivery "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery/response"
+	delivery "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
+	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -24,9 +25,9 @@ type Config struct {
 	Port int
 }
 
-func New(logger *zap.Logger, port int) *ServerGRPC {
+func New(logger *zap.Logger, port int, db storages.ExchangerModelInterface) *ServerGRPC {
 	srv := grpc.NewServer()
-	ex := delivery.NewHandler(logger)
+	ex := delivery.NewHandler(logger, db)
 	pb.RegisterExchangeServiceServer(srv, ex)
 
 	return &ServerGRPC{
