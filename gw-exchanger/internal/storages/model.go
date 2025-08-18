@@ -10,12 +10,15 @@ type Valute struct {
 	FullName string `gorm:"type:VARCHAR(255) NOT NULL;"`
 }
 
-type ExchangeRate struct {
-	FromValuteID int       `gorm:"type:int not null;foreignKey:ValuteID;"`
-	ToValuteID   int       `gorm:"type:int not null;foreignKey:ValuteID;"`
+type Exchange struct {
+	FromValuteID int       `gorm:"type:int not null;"`
+	ToValuteID   int       `gorm:"type:int not null;"`
 	Rate         uint64    `gorm:"type:BIGINT NOT NULL;"`
-	RateId       int       `gorm:"primaryKey"`
+	RateID       int       `gorm:"primaryKey"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
+
+	FromValute Valute `gorm:"foreignKey:FromValuteID;references:ID"`
+	ToValute   Valute `gorm:"foreignKey:ToValuteID;references:ID"`
 }
 
 type ReturnExchanges struct {
