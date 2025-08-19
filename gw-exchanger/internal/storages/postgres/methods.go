@@ -6,9 +6,10 @@ func (db *DB) GetAll() ([]storages.Exchange, error) {
 	var results []storages.Exchange
 
 	err := db.DB.Model(&storages.Exchange{}).
-		Select("from_valute.code", "to_valute.code", "exchange.rate").
-		Joins("FromValute").Joins("ToValute").
-		Find(&results).Error
+		Select("from_valute.code as from_valute_code, to_valute.code as to_valute_code, exchanges.rate").
+		Joins("JOIN valutes as from_valute ON exchanges.from_valute_id = from_valute.id").
+		Joins("JOIN valutes as to_valute ON exchanges.to_valute_id = to_valute.id").
+		Scan(&results).Error
 
 	if err != nil {
 		return nil, err
@@ -21,10 +22,11 @@ func (db *DB) GetRateBetween(fromValute, toValute string) (storages.Exchange, er
 	var results storages.Exchange
 
 	err := db.DB.Model(&storages.Exchange{}).
-		Select("from_valute.code", "to_valute.code", "exchange.rate").
-		Joins("FromValute").Joins("ToValute").
+		Select("from_valute.code as from_valute_code, to_valute.code as to_valute_code, exchanges.rate").
+		Joins("JOIN valutes as from_valute ON exchanges.from_valute_id = from_valute.id").
+		Joins("JOIN valutes as to_valute ON exchanges.to_valute_id = to_valute.id").
 		Where("from_valute.code = ? AND to_valute.code = ?", fromValute, toValute).
-		Find(&results).Error
+		First(&results).Error
 
 	if err != nil {
 		return storages.Exchange{}, err

@@ -34,7 +34,7 @@ func main() {
 
 	var DBcfg dbOptions
 	var serverCfg server.Config
-	flag.IntVar(&serverCfg.Port, "SERVER_PORT", 8080, "порт сервера API")
+	flag.IntVar(&serverCfg.Port, "SERVER_PORT", 4000, "порт сервера API")
 	flag.StringVar(&serverCfg.Host, "SERVER_ADDRESS", os.Getenv("SERVER_ADDRESS"), "адрес сервера API")
 	flag.StringVar(&DBcfg.dbUser, "POSTGRES_USER", os.Getenv("POSTGRES_USER"), "имя пользователя postgres")
 	flag.StringVar(&DBcfg.dbPassword, "POSTGRES_PASSWORD", os.Getenv("POSTGRES_PASSWORD"), "пароль пользователя postgres")

@@ -12,7 +12,7 @@ INSERT INTO valutes (code, full_name) VALUES
 ('eur', 'Euro')
 ON CONFLICT DO NOTHING;
 
-CREATE TABLE exchange(
+CREATE TABLE exchanges(
     from_valute_id integer NOT NULL,
     to_valute_id integer NOT NULL,
     rate bigint NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE exchange(
 );
 CREATE UNIQUE INDEX unique_combo ON public.exchange USING btree (from_valute_id, to_valute_id);
 
-INSERT INTO exchange (from_valute_id, to_valute_id, rate) VALUES
+INSERT INTO exchanges (from_valute_id, to_valute_id, rate) VALUES
 (2, 1, 803466),
 (3, 1, 935604),
 (1, 2, 124),

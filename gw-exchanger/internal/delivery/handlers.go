@@ -36,6 +36,7 @@ func (h *Handler) GetExchangeRates(ctx context.Context, in *pb.Empty) (*pb.Excha
 	rates := make(map[string]float32)
 
 	exchange, err := h.db.GetAll()
+	h.logger.Sugar().Debug(exchange)
 	if err != nil {
 		h.logger.Error(err.Error())
 		return &res, status.Error(codes.Internal, err.Error())
@@ -52,17 +53,20 @@ func (h *Handler) GetExchangeRates(ctx context.Context, in *pb.Empty) (*pb.Excha
 
 // Получение курса обмена для конкретной валюты
 func (h *Handler) GetExchangeRateForCurrency(ctx context.Context, in *pb.CurrencyRequest) (*pb.ExchangeRateResponse, error) {
-	var res pb.ExchangeRateResponse
 	exchange, err := h.db.GetRateBetween(in.FromCurrency, in.ToCurrency)
+	h.logger.Sugar().Debug(exchange)
 	if err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			h.logger.Error(err.Error())
 		}
-		return &res, status.Error(codes.NotFound, err.Error())
+		return &pb.ExchangeRateResponse{}, status.Error(codes.NotFound, err.Error())
 	}
 
-	res.FromCurrency = exchange.FromValute.Code
-	res.ToCurrency = exchange.ToValute.Code
-	res.Rate = float32(exchange.Rate) / 10000
+	res := pb.ExchangeRateResponse{
+		FromCurrency: exchange.FromValute.Code,
+		ToCurrency:   exchange.ToValute.Code,
+		Rate:         float32(exchange.Rate) / 10000,
+	}
+
 	return &res, nil
 }

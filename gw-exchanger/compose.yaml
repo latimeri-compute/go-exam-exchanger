@@ -18,8 +18,7 @@ services:
     ports:
       - 4000:4000
     depends_on:
-      db:
-        condition: service_started
+      - db
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
