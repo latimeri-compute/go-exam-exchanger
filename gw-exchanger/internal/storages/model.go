@@ -26,7 +26,3 @@ type ReturnExchanges struct {
 	ToValuteCode   string
 	Rate           uint64
 }
-
-type Models struct {
-	ExchangerModel ExchangerModelInterface
-}

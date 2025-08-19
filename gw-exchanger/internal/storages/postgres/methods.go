@@ -18,7 +18,7 @@ func (db *DB) GetAll() ([]storages.Exchange, error) {
 }
 
 func (db *DB) GetRateBetween() {
-	// TODO impplement
+	// TODO implement
 }
 
 /* SELECT
