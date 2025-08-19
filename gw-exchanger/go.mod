@@ -3,7 +3,6 @@ module github.com/latimeri-compute/go-exam-exchanger/gw-exchanger
 go 1.24.5
 
 require (
-	github.com/joho/godotenv v1.5.1
 	github.com/latimeri-compute/go-exam-exchanger/proto-exchange v0.0.0-20250818133515-a5d7ca8ed85c
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.74.2
