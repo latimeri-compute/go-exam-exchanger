@@ -17,18 +17,18 @@ func (db *DB) GetAll() ([]storages.Exchange, error) {
 	return results, nil
 }
 
-func (db *DB) GetRateBetween() {
-	// TODO implement
-}
+func (db *DB) GetRateBetween(fromValute, toValute string) (storages.Exchange, error) {
+	var results storages.Exchange
 
-/* SELECT
-    fv.code AS from_valute_code,
-    tv.code AS to_valute_code,
-    e.rate
-FROM
-    exchange e
-JOIN
-    valutes fv ON e.from_valute_id = fv.id
-JOIN
-    valutes tv ON e.to_valute_id = tv.id;
-*/
+	err := db.DB.Model(&storages.Exchange{}).
+		Select("from_valute.code", "to_valute.code", "exchange.rate").
+		Joins("FromValute").Joins("ToValute").
+		Where("from_valute.code = ? AND to_valute.code = ?", fromValute, toValute).
+		Find(&results).Error
+
+	if err != nil {
+		return storages.Exchange{}, err
+	}
+
+	return results, nil
+}

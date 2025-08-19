@@ -2,10 +2,16 @@ package delivery
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
 	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
+	"gorm.io/gorm"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"go.uber.org/zap"
 )
 
@@ -31,7 +37,8 @@ func (h *Handler) GetExchangeRates(ctx context.Context, in *pb.Empty) (*pb.Excha
 
 	exchange, err := h.db.GetAll()
 	if err != nil {
-		return &res, err
+		h.logger.Error(err.Error())
+		return &res, status.Error(codes.Internal, err.Error())
 	}
 
 	for _, e := range exchange {
@@ -45,5 +52,17 @@ func (h *Handler) GetExchangeRates(ctx context.Context, in *pb.Empty) (*pb.Excha
 
 // Получение курса обмена для конкретной валюты
 func (h *Handler) GetExchangeRateForCurrency(ctx context.Context, in *pb.CurrencyRequest) (*pb.ExchangeRateResponse, error) {
-	return nil, nil
+	var res pb.ExchangeRateResponse
+	exchange, err := h.db.GetRateBetween(in.FromCurrency, in.ToCurrency)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			h.logger.Error(err.Error())
+		}
+		return &res, status.Error(codes.NotFound, err.Error())
+	}
+
+	res.FromCurrency = exchange.FromValute.Code
+	res.ToCurrency = exchange.ToValute.Code
+	res.Rate = float32(exchange.Rate) / 10000
+	return &res, nil
 }

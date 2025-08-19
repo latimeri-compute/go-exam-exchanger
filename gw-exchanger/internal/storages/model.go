@@ -11,8 +11,8 @@ type Valute struct {
 }
 
 type Exchange struct {
-	FromValuteID int       `gorm:"type:int not null;"`
-	ToValuteID   int       `gorm:"type:int not null;"`
+	FromValuteID int       `gorm:"type:int not null;index:unique_combo;"`
+	ToValuteID   int       `gorm:"type:int not null;index:unique_combo;"`
 	Rate         uint64    `gorm:"type:BIGINT NOT NULL;"`
 	RateID       int       `gorm:"primaryKey"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`

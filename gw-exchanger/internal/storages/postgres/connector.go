@@ -10,7 +10,7 @@ type DB struct {
 }
 
 func NewConnection(dsn string, cfg *gorm.Config) (*DB, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), cfg)
 	if err != nil {
 		return nil, err
 	}

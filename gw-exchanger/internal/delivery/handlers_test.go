@@ -2,61 +2,45 @@ package delivery
 
 import (
 	"context"
-	"net"
+	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages/mocks"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/pkg/testutils"
 	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
+	"gorm.io/gorm"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// func init() {
-// 	logger := zap.NewNop()
-// 	h := NewHandler(logger, mocks.NewExchange())
-
-// 	bufSize := 1024 * 1024
-// 	lis := bufconn.Listen(bufSize)
-
-// 	s := grpc.NewServer()
-// 	pb.RegisterExchangeServiceServer(s, h)
-// 	go func() {
-// 		if err := s.Serve(lis); err != nil {
-// 			log.Fatalf("Server exited with error: %v", err)
-// 		}
-// 	}()
-// }
-
 func TestGetExchangeRates(t *testing.T) {
-	listener := NewTestListener()
+	listener := testutils.NewTestListener()
 	srv := NewTestServer()
 	go func(t *testing.T) {
 		if err := srv.Serve(listener); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	}(t)
 	defer srv.Stop()
 
-	conn := NewTestConnection(t, listener)
+	conn := testutils.NewTestConnection(t, listener)
 	defer conn.Close()
 	client := pb.NewExchangeServiceClient(conn)
 
 	tests := []struct {
-		name string
 		want map[string]float32
 	}{
 		{
-			want: map[string]float32{"rub->eur": 100, "rub->usd": 56, "usd->eur": 0.9},
+			want: map[string]float32{"rub->eur": 100, "rub->usd": 56, "usd->eur": 0.9, "usd->rub": 0.0037},
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for ti, test := range tests {
+		t.Run(fmt.Sprintf("%02d", ti), func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer cancel()
 
@@ -64,38 +48,79 @@ func TestGetExchangeRates(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Log(reflect.TypeOf(resp))
 
 			if !reflect.DeepEqual(resp.Rates, test.want) {
-				t.Errorf("got: %v, want: %v", resp, test.want)
+				t.Errorf("got: %v, want: %v", resp.Rates, test.want)
 			}
 		})
 	}
 }
 
-func NewTestConnection(t *testing.T, listener *bufconn.Listener) *grpc.ClientConn {
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
-			return listener.Dial()
-		}),
+func TestGetExchangeRateForCurrency(t *testing.T) {
+	listener := testutils.NewTestListener()
+	srv := NewTestServer()
+	go func(t *testing.T) {
+		if err := srv.Serve(listener); err != nil {
+			t.Error(err)
+		}
+	}(t)
+	defer srv.Stop()
+
+	conn := testutils.NewTestConnection(t, listener)
+	defer conn.Close()
+	client := pb.NewExchangeServiceClient(conn)
+
+	tests := []struct {
+		name         string
+		fromCurrency string
+		toCurrency   string
+		rate         float32
+		wantError    error
+	}{
+		{
+			name:         "существующие валюты",
+			fromCurrency: "usd",
+			toCurrency:   "rub",
+			rate:         0.0037,
+		},
+		{
+			name:         "несуществующие валюты",
+			fromCurrency: "sda",
+			toCurrency:   "what",
+			rate:         00,
+			wantError:    status.Error(codes.NotFound, gorm.ErrRecordNotFound.Error()),
+		},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
 
-	conn, err := grpc.NewClient("passthrough:///bufnet", opts...)
-	if err != nil {
-		t.Fatal(err)
+			mes := &pb.CurrencyRequest{
+				FromCurrency: test.fromCurrency,
+				ToCurrency:   test.toCurrency,
+			}
+			resp, err := client.GetExchangeRateForCurrency(ctx, mes, grpc.EmptyCallOption{})
+			if err != nil && !errors.Is(err, test.wantError) {
+				t.Errorf("got error: %v, want: %v", err, test.wantError)
+			}
+
+			// ew ugly
+			w := struct {
+				ToCurrency   string
+				FromCurrency string
+				Rate         float32
+			}{
+				ToCurrency:   test.toCurrency,
+				FromCurrency: test.fromCurrency,
+				Rate:         test.rate,
+			}
+
+			if test.wantError == nil && (resp.FromCurrency != test.fromCurrency ||
+				resp.ToCurrency != test.toCurrency ||
+				resp.Rate != test.rate) {
+				t.Errorf("got: %v, want: %v", resp, w)
+			}
+		})
 	}
-	return conn
-}
-
-func NewTestListener() *bufconn.Listener {
-	lis := bufconn.Listen(1024 * 1024)
-	return lis
-}
-
-func NewTestServer() *grpc.Server {
-	h := NewHandler(zap.NewNop(), mocks.NewExchange())
-	s := grpc.NewServer()
-	pb.RegisterExchangeServiceServer(s, h)
-	return s
 }

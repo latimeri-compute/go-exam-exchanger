@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
+	"gorm.io/gorm"
 )
 
 var (
@@ -52,6 +53,15 @@ var Exchanges = []storages.Exchange{
 		FromValute:   ValuteUSD,
 		ToValute:     ValuteEUR,
 	},
+	{
+		FromValuteID: 2,
+		ToValuteID:   1,
+		Rate:         37,
+		RateID:       4,
+		UpdatedAt:    time.Now(),
+		FromValute:   ValuteUSD,
+		ToValute:     ValuteRub,
+	},
 }
 
 type MockExchange struct {
@@ -65,6 +75,15 @@ func (m *MockExchange) GetAll() ([]storages.Exchange, error) {
 	return Exchanges, nil
 }
 
-func (m *MockExchange) GetRateBetween() {
-
+func (m *MockExchange) GetRateBetween(fromValute, toValute string) (storages.Exchange, error) {
+	var res storages.Exchange
+	for _, e := range Exchanges {
+		if fromValute == e.FromValute.Code && toValute == e.ToValute.Code {
+			res = e
+		}
+	}
+	if res.FromValute.Code == "" {
+		return storages.Exchange{}, gorm.ErrRecordNotFound
+	}
+	return res, nil
 }
