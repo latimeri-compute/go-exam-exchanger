@@ -2,6 +2,6 @@ package storages
 
 // ИНТЕРФЕЙС
 type ExchangerModelInterface interface {
-	GetAll() ([]Exchange, error)
-	GetRateBetween(fromValute, toValute string) (Exchange, error)
+	GetAll() ([]ReturnExchanges, error)
+	GetRateBetween(fromValute, toValute string) (ReturnExchanges, error)
 }

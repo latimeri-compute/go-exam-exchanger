@@ -2,8 +2,8 @@ package postgres
 
 import "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
 
-func (db *DB) GetAll() ([]storages.Exchange, error) {
-	var results []storages.Exchange
+func (db *DB) GetAll() ([]storages.ReturnExchanges, error) {
+	var results []storages.ReturnExchanges
 
 	err := db.DB.Model(&storages.Exchange{}).
 		Select("from_valute.code as from_valute_code, to_valute.code as to_valute_code, exchanges.rate").
@@ -18,8 +18,8 @@ func (db *DB) GetAll() ([]storages.Exchange, error) {
 	return results, nil
 }
 
-func (db *DB) GetRateBetween(fromValute, toValute string) (storages.Exchange, error) {
-	var results storages.Exchange
+func (db *DB) GetRateBetween(fromValute, toValute string) (storages.ReturnExchanges, error) {
+	var results storages.ReturnExchanges
 
 	err := db.DB.Model(&storages.Exchange{}).
 		Select("from_valute.code as from_valute_code, to_valute.code as to_valute_code, exchanges.rate").
@@ -29,7 +29,7 @@ func (db *DB) GetRateBetween(fromValute, toValute string) (storages.Exchange, er
 		First(&results).Error
 
 	if err != nil {
-		return storages.Exchange{}, err
+		return storages.ReturnExchanges{}, err
 	}
 
 	return results, nil

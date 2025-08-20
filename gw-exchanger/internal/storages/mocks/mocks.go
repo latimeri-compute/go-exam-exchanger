@@ -25,6 +25,29 @@ var (
 	}
 )
 
+var ExchangeReturns = []storages.ReturnExchanges{
+	{
+		FromValuteCode: "rub",
+		ToValuteCode:   "usd",
+		Rate:           560000,
+	},
+	{
+		FromValuteCode: "rub",
+		ToValuteCode:   "eur",
+		Rate:           1000000,
+	},
+	{
+		FromValuteCode: "usd",
+		ToValuteCode:   "eur",
+		Rate:           9000,
+	},
+	{
+		FromValuteCode: "usd",
+		ToValuteCode:   "rub",
+		Rate:           37,
+	},
+}
+
 var Exchanges = []storages.Exchange{
 	{
 		FromValuteID: 1,
@@ -71,19 +94,23 @@ func NewExchange() *MockExchange {
 	return &MockExchange{}
 }
 
-func (m *MockExchange) GetAll() ([]storages.Exchange, error) {
-	return Exchanges, nil
+func (m *MockExchange) GetAll() ([]storages.ReturnExchanges, error) {
+	return ExchangeReturns, nil
 }
 
-func (m *MockExchange) GetRateBetween(fromValute, toValute string) (storages.Exchange, error) {
-	var res storages.Exchange
-	for _, e := range Exchanges {
-		if fromValute == e.FromValute.Code && toValute == e.ToValute.Code {
-			res = e
+func (m *MockExchange) GetRateBetween(fromValute, toValute string) (storages.ReturnExchanges, error) {
+	var res storages.ReturnExchanges
+	for _, e := range ExchangeReturns {
+		if fromValute == e.FromValuteCode && toValute == e.ToValuteCode {
+			res = storages.ReturnExchanges{
+				FromValuteCode: e.FromValuteCode,
+				ToValuteCode:   e.ToValuteCode,
+				Rate:           e.Rate,
+			}
 		}
 	}
-	if res.FromValute.Code == "" {
-		return storages.Exchange{}, gorm.ErrRecordNotFound
+	if res.FromValuteCode == "" {
+		return storages.ReturnExchanges{}, gorm.ErrRecordNotFound
 	}
 	return res, nil
 }

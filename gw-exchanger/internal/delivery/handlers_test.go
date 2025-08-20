@@ -17,9 +17,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type receivedExchange struct {
+	ToValuteCode   string
+	FromValuteCode string
+	Rate           float32
+}
+
 func TestGetExchangeRates(t *testing.T) {
 	listener := testutils.NewTestListener()
-	srv := NewTestServer()
+	srv := NewTestServer(t)
 	go func(t *testing.T) {
 		if err := srv.Serve(listener); err != nil {
 			t.Error(err)
@@ -58,7 +64,7 @@ func TestGetExchangeRates(t *testing.T) {
 
 func TestGetExchangeRateForCurrency(t *testing.T) {
 	listener := testutils.NewTestListener()
-	srv := NewTestServer()
+	srv := NewTestServer(t)
 	go func(t *testing.T) {
 		if err := srv.Serve(listener); err != nil {
 			t.Error(err)
@@ -105,20 +111,14 @@ func TestGetExchangeRateForCurrency(t *testing.T) {
 				t.Errorf("got error: %v, want: %v", err, test.wantError)
 			}
 
-			// ew ugly
-			w := struct {
-				ToCurrency   string
-				FromCurrency string
-				Rate         float32
-			}{
-				ToCurrency:   test.toCurrency,
-				FromCurrency: test.fromCurrency,
-				Rate:         test.rate,
-			}
-
 			if test.wantError == nil && (resp.FromCurrency != test.fromCurrency ||
 				resp.ToCurrency != test.toCurrency ||
 				resp.Rate != test.rate) {
+				w := receivedExchange{
+					ToValuteCode:   test.toCurrency,
+					FromValuteCode: test.fromCurrency,
+					Rate:           test.rate,
+				}
 				t.Errorf("got: %v, want: %v", resp, w)
 			}
 		})

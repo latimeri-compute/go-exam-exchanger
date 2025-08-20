@@ -43,7 +43,7 @@ func (h *Handler) GetExchangeRates(ctx context.Context, in *pb.Empty) (*pb.Excha
 	}
 
 	for _, e := range exchange {
-		dir := fmt.Sprintf("%s->%s", e.FromValute.Code, e.ToValute.Code)
+		dir := fmt.Sprintf("%s->%s", e.FromValuteCode, e.ToValuteCode)
 		rates[dir] = float32(e.Rate) / 10000
 	}
 
@@ -63,9 +63,10 @@ func (h *Handler) GetExchangeRateForCurrency(ctx context.Context, in *pb.Currenc
 	}
 
 	res := pb.ExchangeRateResponse{
-		FromCurrency: exchange.FromValute.Code,
-		ToCurrency:   exchange.ToValute.Code,
-		Rate:         float32(exchange.Rate) / 10000,
+		FromCurrency: exchange.FromValuteCode,
+		ToCurrency:   exchange.ToValuteCode,
+		// TODO ыыыыы надо будет чё-то сделать с неточностями во флоутах
+		Rate: float32(exchange.Rate) / 10000,
 	}
 
 	return &res, nil
