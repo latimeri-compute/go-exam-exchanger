@@ -2,13 +2,14 @@ package postgres
 
 import "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
 
-func (db *DB) GetAll() ([]storages.Exchange, error) {
-	var results []storages.Exchange
+func (db *DB) GetAll() ([]storages.ReturnExchanges, error) {
+	var results []storages.ReturnExchanges
 
 	err := db.DB.Model(&storages.Exchange{}).
-		Select("from_valute.code", "to_valute.code", "exchange.rate").
-		Joins("FromValute").Joins("ToValute").
-		Find(&results).Error
+		Select("from_valute.code as from_valute_code, to_valute.code as to_valute_code, exchanges.rate").
+		Joins("JOIN valutes as from_valute ON exchanges.from_valute_id = from_valute.id").
+		Joins("JOIN valutes as to_valute ON exchanges.to_valute_id = to_valute.id").
+		Scan(&results).Error
 
 	if err != nil {
 		return nil, err
@@ -17,14 +18,19 @@ func (db *DB) GetAll() ([]storages.Exchange, error) {
 	return results, nil
 }
 
-/* SELECT
-    fv.code AS from_valute_code,
-    tv.code AS to_valute_code,
-    e.rate
-FROM
-    exchange e
-JOIN
-    valutes fv ON e.from_valute_id = fv.id
-JOIN
-    valutes tv ON e.to_valute_id = tv.id;
-*/
+func (db *DB) GetRateBetween(fromValute, toValute string) (storages.ReturnExchanges, error) {
+	var results storages.ReturnExchanges
+
+	err := db.DB.Model(&storages.Exchange{}).
+		Select("from_valute.code as from_valute_code, to_valute.code as to_valute_code, exchanges.rate").
+		Joins("JOIN valutes as from_valute ON exchanges.from_valute_id = from_valute.id").
+		Joins("JOIN valutes as to_valute ON exchanges.to_valute_id = to_valute.id").
+		Where("from_valute.code = ? AND to_valute.code = ?", fromValute, toValute).
+		First(&results).Error
+
+	if err != nil {
+		return storages.ReturnExchanges{}, err
+	}
+
+	return results, nil
+}
