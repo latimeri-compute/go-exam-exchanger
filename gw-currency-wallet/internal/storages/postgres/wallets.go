@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"gorm.io/gorm"
@@ -35,7 +36,7 @@ func (m *WalletModel) ChangeBalance(id uint, amount int, currency string) (stora
 			ID: id,
 		},
 	}
-	column := fmt.Sprintf("%s_balance", currency)
+	column := fmt.Sprintf("%s_balance", strings.ToLower(currency))
 
 	err := m.DB.Transaction(func(tx *gorm.DB) error {
 		var balance *int

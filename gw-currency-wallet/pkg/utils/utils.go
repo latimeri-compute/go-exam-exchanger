@@ -106,3 +106,7 @@ func JWTAuthenticator() func(http.Handler) http.Handler {
 		return http.HandlerFunc(hfn)
 	}
 }
+
+func GiveJWTToken() {
+
+}

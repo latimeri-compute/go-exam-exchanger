@@ -23,17 +23,17 @@ func Router(h *Handler) *chi.Mux {
 		r.Post("/login", h.LoginUser)
 
 		// 	Заголовки:
-		// _Authorization: Bearer JWT_TOKEN_
+		// Authorization: Bearer JWT_TOKEN
 		r.Group(func(r chi.Router) {
 			r.Use(jwtauth.Verifier(tokenAuth))
 			r.Use(utils.JWTAuthenticator())
 
-			r.Get("/balance", GetBalance)
-			r.Post("/deposit", TopUpBalance)
-			r.Post("/withdraw", WithdrawFromBalance)
+			r.Get("/balance", h.GetBalance)
+			r.Post("/deposit", h.TopUpBalance)
+			r.Post("/withdraw", h.WithdrawFromBalance)
 
-			r.Get("/exchange/rates", GetExchangeRates)
-			r.Post("/exchange", ExchangeFunds)
+			r.Get("/exchange/rates", h.GetExchangeRates)
+			r.Post("/exchange", h.ExchangeFunds)
 		})
 	})
 

@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"errors"
+
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"gorm.io/gorm"
 )
@@ -16,22 +18,19 @@ func NewUserModel(db *gorm.DB) *UserModel {
 }
 
 func (m *UserModel) CreateUser(user *storages.User) error {
-	newWallet := &storages.Wallet{
-		UsdBalance: 0,
-		RubBalance: 0,
-		EurBalance: 0,
-	}
-
+	wal := &storages.Wallet{}
 	err := m.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(newWallet).Error; err != nil {
+		if err := tx.Create(wal).Error; err != nil {
 			return err
 		}
 
-		user.Wallet.ID = newWallet.ID
+		user.WalletID = wal.ID
 		if err := tx.Create(user).Error; err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return storages.ErrRecordExists
+			}
 			return err
 		}
-
 		return nil
 	})
 
