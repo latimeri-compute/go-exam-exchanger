@@ -39,5 +39,8 @@ func (m *UserModel) CreateUser(user *storages.User) error {
 
 func (m *UserModel) FindUser(user *storages.User) error {
 	err := m.DB.First(user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return storages.ErrRecordNotFound
+	}
 	return err
 }

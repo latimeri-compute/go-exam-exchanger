@@ -9,6 +9,7 @@ import (
 var (
 	ErrRecordNotFound = errors.New("Record not found")
 	ErrRecordExists   = errors.New("Record already exists")
+	ErrLessThanZero   = errors.New("Balance can't go into negatives")
 )
 
 type User struct {

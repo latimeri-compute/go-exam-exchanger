@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log/slog"
-	"net/http"
 	"os"
 	"time"
 
@@ -28,15 +26,23 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 	}
+
 	var DBcfg postgres.DBOptions
+	serverConfig := server.Config{
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
 	flag.StringVar(&DBcfg.DBUser, "POSTGRES_USER", os.Getenv("POSTGRES_USER"), "имя пользователя postgres")
 	flag.StringVar(&DBcfg.DBPassword, "POSTGRES_PASSWORD", os.Getenv("POSTGRES_PASSWORD"), "пароль пользователя postgres")
 	flag.StringVar(&DBcfg.DBName, "POSTGRES_DB", os.Getenv("POSTGRES_DB"), "название базы данных postgres")
 	flag.StringVar(&DBcfg.DBHost, "POSTGRES_HOST", "localhost", "хост сервера postgres")
 	flag.IntVar(&DBcfg.DBPort, "POSTGRES_PORT", 5432, "порт сервера postgres")
 
-	var serverConfig server.Config
 	flag.IntVar(&serverConfig.Port, "SERVER_PORT", 4001, "порт сервера API")
+	flag.StringVar(&serverConfig.JWTSecret, "JWT_SECRET", os.Getenv("JWT_SECRET"), "строка для генерации JWT")
+
+	flag.Parse()
 
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", DBcfg.DBUser, DBcfg.DBPassword, DBcfg.DBHost, DBcfg.DBPort, DBcfg.DBName)
 	db, err := postgres.NewConnection(dsn)
@@ -51,22 +57,12 @@ func main() {
 	}
 
 	m := postgres.NewModels(db)
-	h := delivery.NewHandler(m, logger.Sugar())
-	srv := http.Server{
-		Addr:    fmt.Sprintf("%s:%d", serverConfig.Addr, serverConfig.Port),
-		Handler: delivery.Router(h),
+	h := delivery.NewHandler(m, logger.Sugar(), serverConfig.JWTSecret)
 
-		ErrorLog: slog.NewLogLogger(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			AddSource: true,
-		}), slog.LevelError),
+	srv := server.NewServer(h, logger.Sugar(), serverConfig)
 
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-	}
-
-	sugar.Infof("Запуск сервера, адрес: %s", srv.Addr)
-	err = srv.ListenAndServe()
+	sugar.Infof("Запуск сервера, адрес: %s", srv.Server.Addr)
+	err = srv.Serve()
 	logger.Error(err.Error())
 	os.Exit(1)
 }

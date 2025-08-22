@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/go-chi/jwtauth"
 )
 
 // структура для упрощения синтаксиса
@@ -87,26 +85,4 @@ func UnpackJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 	}
 
 	return nil
-}
-
-func JWTAuthenticator() func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		hfn := func(w http.ResponseWriter, r *http.Request) {
-			token, _, err := jwtauth.FromContext(r.Context())
-
-			if err != nil || token == nil {
-				WriteJSON(w, http.StatusUnauthorized, JSONEnveloper{}, nil)
-				return
-			}
-
-			// Token is authenticated, pass it through
-			next.ServeHTTP(w, r)
-		}
-
-		return http.HandlerFunc(hfn)
-	}
-}
-
-func GiveJWTToken() {
-
 }

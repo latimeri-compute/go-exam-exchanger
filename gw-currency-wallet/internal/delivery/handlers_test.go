@@ -47,13 +47,13 @@ func TestRegisterUser(t *testing.T) {
 	m := mock_storages.NewMockModels(mUsers, mWallets)
 	defer ctrl.Finish()
 
-	h := NewHandler(m, zap.NewNop().Sugar())
+	h := NewHandler(m, zap.NewNop().Sugar(), "a")
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
 	client := &http.Client{}
 
-	// mUsers.EXPECT().CreateUser(gomock.Any()).Return(nil).Times(1)
+	mUsers.EXPECT().CreateUser(gomock.Any()).Return(nil).Times(1)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
