@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
@@ -32,13 +33,15 @@ func (m *UserModel) CreateUser(user *storages.User) error {
 			return err
 		}
 		return nil
+	}, &sql.TxOptions{
+		Isolation: sql.LevelReadCommitted,
 	})
 
 	return err
 }
 
 func (m *UserModel) FindUser(user *storages.User) error {
-	err := m.DB.First(user).Error
+	err := m.DB.Where("email = ?", user.Email).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return storages.ErrRecordNotFound
 	}
