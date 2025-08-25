@@ -7,6 +7,7 @@ import (
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery/middleware"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/utils"
 	"gorm.io/gorm"
 )
@@ -40,7 +41,7 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Models.Users.FindUser(user)
 	if err != nil {
-		h.Logger.Errorf("GetBalance: ошибка получения пользователя: %v", err)
+		h.Logger.Errorf("GetBalance: oшибка получения пользователя: %v", err)
 		utils.InternalErrorResponse(w)
 		return
 	}
@@ -55,9 +56,9 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debugf("Баланс пользователя: %v", wallet)
 
 	balanceResponse := balanceResponse{
-		USD: float64(wallet.UsdBalance) / 10000,
-		EUR: float64(wallet.EurBalance) / 10000,
-		RUB: float64(wallet.RubBalance) / 10000,
+		USD: float64(wallet.UsdBalance) / 100,
+		EUR: float64(wallet.EurBalance) / 100,
+		RUB: float64(wallet.RubBalance) / 100,
 	}
 	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"balance": balanceResponse}, nil)
 	if err != nil {
@@ -73,13 +74,21 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 	var receivedJson fundsRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
-		h.Logger.Debugf("Ошибка распаковки json: %v\n", err)
+		h.Logger.Debugf("Ошибка распаковки json: ", err)
 		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
 		return
 	}
-	h.Logger.Debugf("TopUpBalance: получен JSON: %v\n", receivedJson)
+	h.Logger.Debugf("TopUpBalance: получен JSON: ", receivedJson)
 
-	amount := int(math.Abs(receivedJson.Amount) * 10000)
+	v := validator.NewValidator()
+	v.CheckBalanceChange(receivedJson.Amount, receivedJson.Currency)
+	if !v.Valid() {
+		h.Logger.Debug("Json не прошёл проверку валидности: ", v.Errors)
+		utils.BadRequestResponse(w, v.Errors)
+		return
+	}
+
+	amount := int(math.Abs(receivedJson.Amount) * 100)
 	h.ChangeBalance(w, r, amount, receivedJson.Currency)
 }
 
@@ -94,11 +103,19 @@ func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Logger.Debugf("WithdrawFromBalance: получен JSON: %v\n", receivedJson)
 
-	amount := -int(math.Abs(receivedJson.Amount) * 10000)
+	v := validator.NewValidator()
+	v.CheckBalanceChange(receivedJson.Amount, receivedJson.Currency)
+	if !v.Valid() {
+		h.Logger.Debug("Json не прошёл проверку валидности: ", v.Errors)
+		utils.BadRequestResponse(w, v.Errors)
+		return
+	}
+
+	amount := -int(math.Abs(receivedJson.Amount) * 100)
 	h.ChangeBalance(w, r, amount, receivedJson.Currency)
 }
 
-// смена баланса
+// смена баланса, метод просто для уменьшения тавтологии
 func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount int, currency string) {
 	userId, ok := r.Context().Value("user").(middleware.ContextID)
 	if !ok {

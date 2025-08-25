@@ -18,13 +18,30 @@ func HashString(t *testing.T, str string) []byte {
 	return bytes
 }
 
-func ReceiveResponseBody(t *testing.T, client *http.Client, method string, urlPath string, body []byte) []byte {
+func ReceiveBodyPost(t *testing.T, urlPath string, body []byte) []byte {
+	t.Helper()
+	resp, err := http.Post(urlPath, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b = bytes.TrimSpace(b)
+	return b
+}
+
+func ReceiveResponseBody(t *testing.T, client *http.Client, method string, contentType, urlPath string, body []byte) []byte {
 	t.Helper()
 
 	req, err := http.NewRequest(method, urlPath, bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}
+	req.Header.Set("content-type", contentType)
 
 	resp, err := client.Do(req)
 	if err != nil {

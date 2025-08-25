@@ -14,6 +14,10 @@ func BadRequestResponse(w http.ResponseWriter, msg any) {
 	ErrorResponse(w, http.StatusBadRequest, msg)
 }
 
+func UnprocessableEntityResponse(w http.ResponseWriter, msg any) {
+	ErrorResponse(w, http.StatusUnprocessableEntity, msg)
+}
+
 // записывает данные в формат JSON и отправляет клиенту
 func WriteJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
 	js, err := json.Marshal(data)

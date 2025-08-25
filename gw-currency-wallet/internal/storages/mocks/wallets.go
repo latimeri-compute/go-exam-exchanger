@@ -55,6 +55,21 @@ func (mr *MockWalletModelInterfaceMockRecorder) ChangeBalance(id, amount, curren
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeBalance", reflect.TypeOf((*MockWalletModelInterface)(nil).ChangeBalance), id, amount, currency)
 }
 
+// ExchangeBetweenCurrency mocks base method.
+func (m *MockWalletModelInterface) ExchangeBetweenCurrency(id uint, amount, rate int, fromCurrency, toCurrency string) (storages.Wallet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExchangeBetweenCurrency", id, amount, rate, fromCurrency, toCurrency)
+	ret0, _ := ret[0].(storages.Wallet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExchangeBetweenCurrency indicates an expected call of ExchangeBetweenCurrency.
+func (mr *MockWalletModelInterfaceMockRecorder) ExchangeBetweenCurrency(id, amount, rate, fromCurrency, toCurrency any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExchangeBetweenCurrency", reflect.TypeOf((*MockWalletModelInterface)(nil).ExchangeBetweenCurrency), id, amount, rate, fromCurrency, toCurrency)
+}
+
 // GetBalance mocks base method.
 func (m *MockWalletModelInterface) GetBalance(id uint) (storages.Wallet, error) {
 	m.ctrl.T.Helper()

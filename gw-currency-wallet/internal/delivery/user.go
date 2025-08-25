@@ -73,7 +73,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
 		h.Logger.Debugf("Ошибка распаковки json: %v\n", err)
-		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
+		utils.ErrorResponse(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err = h.Models.Users.FindUser(user)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.WriteJSON(w, http.StatusUnauthorized, utils.JSONEnveloper{"error": "Invalid username or password"}, nil)
+			utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid username or password")
 			return
 		}
 	}
@@ -102,7 +102,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(receivedJson.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			utils.WriteJSON(w, http.StatusUnauthorized, utils.JSONEnveloper{"error": "Invalid username or password"}, nil)
+			utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid username or password")
 			return
 		} else {
 			h.Logger.Panicf("Ошибка сравнивания хешей паролей: %v", err)
