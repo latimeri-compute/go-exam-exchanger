@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 
@@ -25,7 +26,7 @@ type balanceResponse struct {
 
 // получение баланса
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debugf("Получен JST %v", r.Header.Get("Authentication"))
+	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
 	userId, ok := r.Context().Value("user").(middleware.ContextID)
 	if !ok {
 		h.Logger.Errorf("Ошибка получения id пользователя из контекста")
@@ -41,19 +42,20 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Models.Users.FindUser(user)
 	if err != nil {
-		h.Logger.Errorf("GetBalance: oшибка получения пользователя: %v", err)
+		// если пользователь не найден, то где-то между миддлвейром и этим хендлером что-то сломалось
+		h.Logger.Error("GetBalance: oшибка получения пользователя: ", err)
 		utils.InternalErrorResponse(w)
 		return
 	}
-	h.Logger.Debugf("Найден пользователь в системе: %v", user)
+	h.Logger.Debug("Найден пользователь в системе: ", user)
 
 	wallet, err := h.Models.Wallets.GetBalance(user.ID)
 	if err != nil {
-		h.Logger.Errorf("GetBalance: ошибка получения баланса пользователя: %v", err)
+		h.Logger.Error("GetBalance: ошибка получения баланса пользователя: ", err)
 		utils.InternalErrorResponse(w)
 		return
 	}
-	h.Logger.Debugf("Баланс пользователя: %v", wallet)
+	h.Logger.Debug("Баланс пользователя: ", wallet)
 
 	balanceResponse := balanceResponse{
 		USD: float64(wallet.UsdBalance) / 100,
@@ -69,16 +71,16 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 
 // пополнение баланса
 func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debugf("Получен JST %v", r.Header.Get("Authentication"))
+	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
 
 	var receivedJson fundsRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
-		h.Logger.Debugf("Ошибка распаковки json: ", err)
+		h.Logger.Debug("Ошибка распаковки json: ", err)
 		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
 		return
 	}
-	h.Logger.Debugf("TopUpBalance: получен JSON: ", receivedJson)
+	h.Logger.Debug("TopUpBalance: получен JSON: ", receivedJson)
 
 	v := validator.NewValidator()
 	v.CheckBalanceChange(receivedJson.Amount, receivedJson.Currency)
@@ -89,7 +91,7 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	amount := int(math.Abs(receivedJson.Amount) * 100)
-	h.ChangeBalance(w, r, amount, receivedJson.Currency)
+	h.ChangeBalance(w, r, amount, receivedJson.Currency, "deposit")
 }
 
 // снятие с баланса
@@ -97,7 +99,7 @@ func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 	var receivedJson fundsRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
-		h.Logger.Debugf("Ошибка распаковки json: %v\n", err)
+		h.Logger.Debug("Ошибка распаковки json: ", err)
 		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
 		return
 	}
@@ -112,11 +114,11 @@ func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	amount := -int(math.Abs(receivedJson.Amount) * 100)
-	h.ChangeBalance(w, r, amount, receivedJson.Currency)
+	h.ChangeBalance(w, r, amount, receivedJson.Currency, "withdrawal")
 }
 
 // смена баланса, метод просто для уменьшения тавтологии
-func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount int, currency string) {
+func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount int, currency, method string) {
 	userId, ok := r.Context().Value("user").(middleware.ContextID)
 	if !ok {
 		h.Logger.Errorf("Ошибка получения id пользователя из контекста")
@@ -132,6 +134,7 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 	}
 	err := h.Models.Users.FindUser(user)
 	if err != nil {
+		// если пользователь не найден, то где-то между миддлвейром и этим хендлером что-то сломалось
 		h.Logger.Errorf("ошибка получения пользователя: %v", err)
 		utils.InternalErrorResponse(w)
 		return
@@ -142,18 +145,18 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 	if err != nil {
 		if errors.Is(err, storages.ErrLessThanZero) {
 			utils.BadRequestResponse(w, "Insufficient funds or invalid amount")
-			return
+		} else {
+			h.Logger.Error("ошибка изменения баланса кошелька: ", err)
+			utils.InternalErrorResponse(w)
 		}
-		h.Logger.Error("WithdrawFromBalance: ошибка снятия с кошелька: ", err)
-		utils.InternalErrorResponse(w)
 		return
 	}
 	balanceResponse := balanceResponse{
-		USD: float64(wallet.UsdBalance) / 10000,
-		EUR: float64(wallet.EurBalance) / 10000,
-		RUB: float64(wallet.RubBalance) / 10000,
+		USD: float64(wallet.UsdBalance) / 100,
+		EUR: float64(wallet.EurBalance) / 100,
+		RUB: float64(wallet.RubBalance) / 100,
 	}
-	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"message": "Withdrawal successful", "new_balance": balanceResponse}, nil)
+	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"message": fmt.Sprintf("%s successful", method), "new_balance": balanceResponse}, nil)
 	if err != nil {
 		h.Logger.Errorf("Ошибка формирования json: %v", err)
 		utils.InternalErrorResponse(w)

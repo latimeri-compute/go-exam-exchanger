@@ -7,7 +7,7 @@ import (
 )
 
 func InternalErrorResponse(w http.ResponseWriter) {
-	ErrorResponse(w, http.StatusBadRequest, "Internal server error")
+	ErrorResponse(w, http.StatusInternalServerError, "Internal server error")
 }
 
 func BadRequestResponse(w http.ResponseWriter, msg any) {
@@ -16,6 +16,9 @@ func BadRequestResponse(w http.ResponseWriter, msg any) {
 
 func UnprocessableEntityResponse(w http.ResponseWriter, msg any) {
 	ErrorResponse(w, http.StatusUnprocessableEntity, msg)
+}
+func UnauthorizedResponse(w http.ResponseWriter, msg any) {
+	ErrorResponse(w, http.StatusUnauthorized, msg)
 }
 
 // записывает данные в формат JSON и отправляет клиенту

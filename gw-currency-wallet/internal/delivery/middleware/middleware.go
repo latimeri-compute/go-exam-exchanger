@@ -19,13 +19,13 @@ func JWTAuthenticator(secret []byte) func(http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
 			claims, err := jwt.HMACCheckHeader(r, secret)
 			if err != nil {
-				utils.ErrorResponse(w, http.StatusUnauthorized, "unauthorized")
+				utils.UnauthorizedResponse(w, "unauthorized")
 				return
 			}
 
 			if !claims.Valid(time.Now()) ||
 				claims.Issuer != ModuleName || !claims.AcceptAudience(ModuleName) {
-				utils.ErrorResponse(w, http.StatusUnauthorized, "unauthorized")
+				utils.UnauthorizedResponse(w, "unauthorized")
 				return
 			}
 
@@ -41,4 +41,20 @@ func JWTAuthenticator(secret []byte) func(http.Handler) http.Handler {
 		}
 		return http.HandlerFunc(hfn)
 	}
+}
+
+func IssueNewJWT(source []byte, userID int) ([]byte, error) {
+	var claims jwt.Claims
+	claims.Subject = strconv.FormatInt(int64(userID), 10)
+	claims.Issued = jwt.NewNumericTime(time.Now())
+	claims.NotBefore = jwt.NewNumericTime(time.Now())
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(time.Hour * 24))
+	claims.Issuer = ModuleName
+	claims.Audiences = []string{ModuleName}
+
+	jwtBytes, err := claims.HMACSign(jwt.HS256, source)
+	if err != nil {
+		return nil, err
+	}
+	return jwtBytes, nil
 }

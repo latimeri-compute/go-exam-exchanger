@@ -15,17 +15,20 @@ func TestCreateUser(t *testing.T) {
 
 	tests := []struct {
 		name     string
+		username string
 		email    string
 		password string
 		wantErr  error
 	}{
 		{
 			name:     "неповторяющийся",
+			username: "uniquedude",
 			email:    "newuser@new.com",
 			password: "password",
 		},
 		{
 			name:     "повторяющийся",
+			username: "uniquedude",
 			email:    "newuser@new.com",
 			password: "password",
 			wantErr:  storages.ErrRecordExists,

@@ -16,6 +16,7 @@ type User struct {
 	gorm.Model
 
 	Email        string `gorm:"type:varchar(255);not null;unique;"`
+	Username     string `gorm:"type:varchar(255);not null;unique;"`
 	PasswordHash []byte `gorm:"bytea;not null;"`
 	JWTToken     string `gotm:"varchar(255);not null;"`
 

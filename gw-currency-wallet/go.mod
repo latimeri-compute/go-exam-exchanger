@@ -9,7 +9,6 @@ require (
 	github.com/latimeri-compute/go-exam-exchanger/proto-exchange v0.0.0-20250818133515-a5d7ca8ed85c
 	github.com/pascaldekloe/jwt v1.12.0
 	github.com/stretchr/testify v1.10.0
-	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.41.0
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b

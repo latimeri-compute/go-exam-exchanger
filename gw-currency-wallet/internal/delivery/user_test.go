@@ -6,44 +6,44 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	mock_storages "github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages/mocks"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/testutils"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
-	"go.uber.org/zap"
 )
 
 func TestRegisterUser(t *testing.T) {
 	tests := []struct {
-		name     string
-		email    string
-		password string
-		want     string
+		name       string
+		username   string
+		email      string
+		password   string
+		want       string
+		wantStatus int
 	}{
 		{
-			name:     "valid",
-			email:    "new@email.com",
-			password: "password",
-			want:     `{"message":"User registered successfully"}`,
+			name:       "верный пароль и email",
+			email:      "new@email.com",
+			password:   "password",
+			want:       `{"message":"User registered successfully"}`,
+			wantStatus: http.StatusCreated,
 		},
 		{
-			name:     "неверный email",
-			email:    "newemail",
-			password: "password",
-			want:     `{"error":{"email":"is not a valid email"}}`,
+			name:       "повторяющийся email",
+			email:      mock_storages.ValidUser.Email,
+			password:   "password",
+			want:       `{"error":"Username or email already exists"}`,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "неправильно сформированнывй email",
+			email:      "newemail",
+			password:   "password",
+			want:       `{"error":{"email":"is not a valid email"}}`,
+			wantStatus: http.StatusBadRequest,
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-	mUsers := mock_storages.NewMockUserModelInterface(ctrl)
-	mUsers.EXPECT().CreateUser(gomock.Any()).Return(nil).Times(1)
-
-	mWallets := mock_storages.NewMockWalletModelInterface(ctrl)
-	m := mock_storages.NewMockModels(mUsers, mWallets)
-	defer ctrl.Finish()
-
-	h := NewHandler(m, zap.NewNop().Sugar(), "a")
+	h := NewTestHandler("a", nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -59,47 +59,47 @@ func TestRegisterUser(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			body := testutils.ReceiveResponseBody(t, client, http.MethodPost,
+			status, body, _ := testutils.ReceiveResponse(t, client, http.MethodPost,
 				"application/json", srv.URL+"/api/v1/register", sendJson)
 
 			assert.Equal(t, test.want, string(body))
+			assert.Equal(t, test.wantStatus, status)
 		})
 	}
 }
 
-// если бы мы знали что это такое но мы ведь не знаем что это такое
 func TestLoginUser(t *testing.T) {
-	// TODO
 	tests := []struct {
-		name     string
-		email    string
-		password string
-		want     string
+		name         string
+		email        string
+		password     string
+		wantContains string
+		wantStatus   int
 	}{
 		{
-			name:     "valid",
-			email:    "new@email.com",
-			password: "password",
-			want:     `"error": "Invalid username or password"`,
+			name:         "верный пользователь",
+			email:        mock_storages.ValidUser.Email,
+			password:     mock_storages.ValidPassword,
+			wantContains: `"authentication_token"`,
+			wantStatus:   http.StatusOK,
 		},
 		{
-			name:     "неверный email",
-			email:    "newemail",
-			password: "password",
-			want:     `{"error":{"email":"is not a valid email"}}`,
+			name:         "неправильно сформированный email",
+			email:        "newemail",
+			password:     "password",
+			wantContains: `{"error":{"email":"is not a valid email"}}`,
+			wantStatus:   http.StatusBadRequest,
+		},
+		{
+			name:         "неверный пароль",
+			email:        mock_storages.ValidUser.Email,
+			password:     "wrongpassword",
+			wantContains: `{"error":"Invalid username or password"}`,
+			wantStatus:   http.StatusBadRequest,
 		},
 	}
 
-	ctrl := gomock.NewController(t)
-	mUsers := mock_storages.NewMockUserModelInterface(ctrl)
-	mUsers.EXPECT().FindUser(&storages.User{Email: tests[0].email}).Return(nil).Times(1)
-	// mUsers.EXPECT().FindUser(storages.User{Email: tests[1].email}).Return(storages.ErrRecordNotFound).Times(1)
-
-	mWallets := mock_storages.NewMockWalletModelInterface(ctrl)
-	m := mock_storages.NewMockModels(mUsers, mWallets)
-	defer ctrl.Finish()
-
-	h := NewHandler(m, zap.NewNop().Sugar(), "a")
+	h := NewTestHandler("a", nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -115,10 +115,11 @@ func TestLoginUser(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			body := testutils.ReceiveResponseBody(t, client, http.MethodPost,
+			status, body, _ := testutils.ReceiveResponse(t, client, http.MethodPost,
 				"application/json", srv.URL+"/api/v1/login", sendJson)
 
-			assert.Equal(t, test.want, string(body))
+			assert.Contains(t, string(body), test.wantContains)
+			assert.Equal(t, test.wantStatus, status)
 		})
 	}
 }

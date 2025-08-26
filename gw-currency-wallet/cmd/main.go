@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -17,7 +18,8 @@ import (
 func main() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		os.Exit(1)
+		log.Fatal(err)
+		return
 	}
 	defer logger.Sync()
 	sugar := logger.Sugar()
@@ -25,6 +27,7 @@ func main() {
 	err = godotenv.Load("../config.env")
 	if err != nil {
 		logger.Error(err.Error())
+		return
 	}
 
 	var DBcfg postgres.DBOptions
@@ -64,5 +67,4 @@ func main() {
 	sugar.Infof("Запуск сервера, адрес: %s", srv.Server.Addr)
 	err = srv.Serve()
 	logger.Error(err.Error())
-	os.Exit(1)
 }

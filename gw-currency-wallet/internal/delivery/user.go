@@ -3,19 +3,17 @@ package delivery
 import (
 	"errors"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery/middleware"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/utils"
-	"github.com/pascaldekloe/jwt"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type loginJSON struct {
+	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -92,36 +90,31 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	err = h.Models.Users.FindUser(user)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid username or password")
-			return
+			utils.UnauthorizedResponse(w, "not allowed")
+		} else {
+			h.Logger.Error("Ошибка получения пользователя из базы данных: ", err)
+			utils.InternalErrorResponse(w)
 		}
+		return
 	}
 
-	h.Logger.Debugf("Найден пользователь: %v", user)
+	h.Logger.Debug("Найден пользователь: ", user)
+	h.Logger.Debug(user.PasswordHash)
 
 	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(receivedJson.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			utils.ErrorResponse(w, http.StatusUnauthorized, "Invalid username or password")
-			return
+			utils.UnauthorizedResponse(w, "Invalid username or password")
 		} else {
-			h.Logger.Panicf("Ошибка сравнивания хешей паролей: %v", err)
+			h.Logger.Error("Ошибка сравнивания хешей паролей: ", err)
 			utils.InternalErrorResponse(w)
-			return
 		}
+		return
 	}
 
-	var claims jwt.Claims
-	claims.Subject = strconv.FormatInt(int64(user.ID), 10)
-	claims.Issued = jwt.NewNumericTime(time.Now())
-	claims.NotBefore = jwt.NewNumericTime(time.Now())
-	claims.Expires = jwt.NewNumericTime(time.Now().Add(time.Hour * 24))
-	claims.Issuer = middleware.ModuleName
-	claims.Audiences = []string{middleware.ModuleName}
-
-	jwtBytes, err := claims.HMACSign(jwt.HS256, []byte(h.JWTsource))
+	jwtBytes, err := middleware.IssueNewJWT([]byte(h.JWTsource), int(user.ID))
 	if err != nil {
-		h.Logger.Errorf("Ошибка формирования JST: %v", err)
+		h.Logger.Error("Ошибка формирования JST: ", err)
 		utils.InternalErrorResponse(w)
 		return
 	}
