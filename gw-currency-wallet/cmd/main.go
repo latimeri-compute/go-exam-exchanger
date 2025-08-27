@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/server"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages/postgres"
@@ -45,6 +46,8 @@ func main() {
 	flag.IntVar(&serverConfig.Port, "SERVER_PORT", 4001, "порт сервера API")
 	flag.StringVar(&serverConfig.JWTSecret, "JWT_SECRET", os.Getenv("JWT_SECRET"), "строка для генерации JWT")
 
+	gaddress := flag.String("gRPC address", "localhost:4000", "адрес удалённого grpc сервера")
+
 	flag.Parse()
 
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", DBcfg.DBUser, DBcfg.DBPassword, DBcfg.DBHost, DBcfg.DBPort, DBcfg.DBName)
@@ -59,8 +62,11 @@ func main() {
 		sugar.Errorf("Ошибка автомиграции: %v", err)
 	}
 
+	gclient, err := grpcclient.NewClient(*gaddress)
+	sugar.Error("ошибка создания grpc клиента: ", err.Error())
+
 	m := postgres.NewModels(db)
-	h := delivery.NewHandler(m, logger.Sugar(), serverConfig.JWTSecret)
+	h := delivery.NewHandler(m, logger.Sugar(), gclient, serverConfig.JWTSecret)
 
 	srv := server.NewServer(h, logger.Sugar(), serverConfig)
 

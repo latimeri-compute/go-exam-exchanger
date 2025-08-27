@@ -27,20 +27,13 @@ func NewClient(address string) (pb.ExchangeServiceClient, error) {
 	return client, nil
 }
 
-func GetOnlyRates(c pb.ExchangeServiceClient, ctx context.Context) ([]ExchangeResponse, error) {
-	var response []ExchangeResponse
-	rates, err := c.GetExchangeRates(ctx, &pb.Empty{})
+func GetOnlyRates(c pb.ExchangeServiceClient, ctx context.Context) (map[string]float32, error) {
+	rates, err := c.GetExchangeRates(ctx, &pb.Empty{}, grpc.EmptyCallOption{})
 	if err != nil {
-		return nil, err
-	}
-	for key, rate := range rates.Rates {
-		response = append(response, ExchangeResponse{
-			Currency: key,
-			Rate:     rate,
-		})
+		return make(map[string]float32), err
 	}
 
-	return response, nil
+	return rates.Rates, nil
 }
 
 func GetOnlySpecificRate(c pb.ExchangeServiceClient, ctx context.Context, from, to string) (float32, error) {

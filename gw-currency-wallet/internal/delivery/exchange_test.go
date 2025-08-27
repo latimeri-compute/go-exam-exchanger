@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
+	mock_storages "github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages/mocks"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/testutils"
 	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -47,7 +49,13 @@ func TestGetRates(t *testing.T) {
 	defer conn.Close()
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn))
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := mock_storages.NewMockModels()
+	h := NewHandler(m, logger.Sugar(), pb.NewExchangeServiceClient(conn), jwtString)
+	// h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn))
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -67,7 +75,6 @@ func TestGetRates(t *testing.T) {
 }
 
 func TestExchangeFunds(t *testing.T) {
-	// TODO
 	tests := []struct {
 		name       string
 		userId     int
@@ -83,7 +90,7 @@ func TestExchangeFunds(t *testing.T) {
 			from:       "usd",
 			to:         "rub",
 			amount:     20,
-			wantBody:   `{"message":"Exchange successful","exchanged_amount":20,"new_balance":`,
+			wantBody:   `{"message":"Exchange successful","exchanged_amount":1700,"new_balance":`,
 			wantStatus: http.StatusOK,
 		},
 		{

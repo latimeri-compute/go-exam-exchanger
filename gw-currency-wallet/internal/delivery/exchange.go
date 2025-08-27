@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"strings"
@@ -22,16 +23,35 @@ type exchangeRequest struct {
 }
 
 func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	response, err := grpcclient.GetOnlyRates(h.ExchangeClient, ctx)
-	if err != nil {
-		h.Logger.Errorf("GetExchangeRates Ошибка получения курса валют: ", err)
-		utils.InternalErrorResponse(w)
-		return
+	rates, ok := h.exchangeCache.Get("all_rates")
+	h.Logger.Debugf("существование курса валют в кеше: %v, полученный курс из кеша: %v, ", ok, rates)
+
+	if !ok {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		h.Logger.Debug("запрос на удалённый сервер...")
+		response, err := grpcclient.GetOnlyRates(h.ExchangeClient, ctx)
+		if err != nil {
+			h.Logger.Errorf("GetExchangeRates Ошибка получения курса валют: ", err)
+			utils.InternalErrorResponse(w)
+			return
+		}
+		h.Logger.Debug("полученный курс валют: ", response)
+
+		// TODO поменяй там протобаф уже......
+		for key, rate := range response {
+			rates = append(rates, ExchangeCachedItem{
+				FromCurrency: key[0:3],
+				ToCurrency:   key[5:],
+				Rate:         rate,
+			})
+		}
+
+		h.exchangeCache.Set("all_rates", rates, time.Duration(time.Minute*3))
 	}
 
-	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"rates": response}, nil)
+	err := utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"rates": rates}, nil)
 	if err != nil {
 		h.Logger.Errorf("Ошибка формирования json: %v", err)
 		utils.InternalErrorResponse(w)
@@ -39,13 +59,14 @@ func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
-	// TODO exchanged_amount должна указываться в единицах toCurrency
+	// ew what an ugly bastard
 	// TODO вынести структуры в более подходящее место
+	// TODO в принципе облагородить метод
 	var receivedJson exchangeRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
 		h.Logger.Debugf("Ошибка распаковки json: %v\n", err)
-		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
+		utils.UnprocessableEntityResponse(w, utils.JSONEnveloper{"error": err})
 		return
 	}
 	h.Logger.Debugf("ExchangeFunds: получен JSON: %v\n", receivedJson)
@@ -54,18 +75,36 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 	toCurrency := strings.ToLower(receivedJson.ToCurrency)
 
 	v := validator.NewValidator()
-	v.Check(validator.IsPermittedValue(fromCurrency, []string{"rub", "usd", "eur"}...), "from_currency", "currency not supported")
-	v.Check(validator.IsPermittedValue(toCurrency, []string{"rub", "usd", "eur"}...), "from_currency", "currency not supported")
-	v.Check(receivedJson.Amount > 0, "amount", "cannot be less or equal to zero")
+	validator.ValidateExchangeRequest(v, fromCurrency, toCurrency, receivedJson.Amount)
 	if !v.Valid() {
 		utils.BadRequestResponse(w, v.Errors)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	rate, err := grpcclient.GetOnlySpecificRate(h.ExchangeClient, ctx, fromCurrency, toCurrency)
-	rate = float32(math.Round(float64(rate * 100)))
+	var rate float32
+	dir := fmt.Sprintf("%s->%s", fromCurrency, toCurrency)
+	cache, ok := h.exchangeCache.Get(dir)
+	if !ok {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		rate, err := grpcclient.GetOnlySpecificRate(h.ExchangeClient, ctx, fromCurrency, toCurrency)
+		if err != nil {
+			h.Logger.Error("Ошибка получения данных от gRPC сервера: ", err)
+			utils.InternalErrorResponse(w)
+			return
+		}
+
+		rate = float32(math.Round(float64(rate * 100)))
+
+		h.exchangeCache.Set(dir, []ExchangeCachedItem{{
+			FromCurrency: fromCurrency,
+			ToCurrency:   toCurrency,
+			Rate:         rate,
+		}}, time.Minute*3)
+
+	} else {
+		rate = cache[0].Rate
+	}
 
 	var user storages.User
 	userID, ok := r.Context().Value("user").(middleware.ContextID)
@@ -112,7 +151,7 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 	}
 	err = utils.WriteJSON(w, http.StatusOK, exchangeResponse{
 		Message:         "Exchange successful",
-		ExchangedAmount: receivedJson.Amount,
+		ExchangedAmount: receivedJson.Amount * float64(rate/100),
 		NewBalance: balance{
 			USD: float64(wallet.UsdBalance),
 			RUB: float64(wallet.RubBalance),

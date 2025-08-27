@@ -31,6 +31,7 @@ func (h *Handler) GetExchangeRates(ctx context.Context, in *pb.Empty) (*pb.Excha
 }
 func (h *Handler) GetExchangeRateForCurrency(ctx context.Context, in *pb.CurrencyRequest) (*pb.ExchangeRateResponse, error) {
 	var res pb.ExchangeRateResponse
+
 	key := fmt.Sprintf("%s->%s", in.FromCurrency, in.ToCurrency)
 	res.Rate = Rates[key]
 	return &res, nil
