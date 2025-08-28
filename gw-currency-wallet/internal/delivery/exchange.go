@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery/middleware"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
@@ -58,10 +57,22 @@ func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type balance struct {
+	RUB float64 `json:"RUB"`
+	USD float64 `json:"USD"`
+	EUR float64 `json:"EUR"`
+}
+type exchangeResponse struct {
+	Message         string  `json:"message"`
+	ExchangedAmount float64 `json:"exchanged_amount"`
+	NewBalance      balance `json:"new_balance"`
+}
+
 func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 	// ew what an ugly bastard
 	// TODO вынести структуры в более подходящее место
 	// TODO в принципе облагородить метод
+
 	var receivedJson exchangeRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
@@ -106,25 +117,12 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		rate = cache[0].Rate
 	}
 
-	var user storages.User
-	userID, ok := r.Context().Value("user").(middleware.ContextID)
+	user, ok := r.Context().Value("user").(storages.User)
 	if !ok {
-		h.Logger.Errorf("Ошибка получения id пользователя из контекста")
 		utils.InternalErrorResponse(w)
 		return
 	}
 
-	user.ID = uint(userID)
-	err = h.Models.Users.FindUser(&user)
-	if err != nil {
-		if errors.Is(err, storages.ErrRecordNotFound) {
-			h.Logger.Error("ID пользователя из контекста не соответствует ID в системе, ", err)
-		} else {
-			h.Logger.Error("Непредвиденная ошибка: ", err)
-		}
-		utils.InternalErrorResponse(w)
-		return
-	}
 	h.Logger.Debug("wallet Id: ", user.Wallet.ID)
 	amount := utils.Abs(int(math.Round(receivedJson.Amount * 100)))
 	wallet, err := h.Models.Wallets.ExchangeBetweenCurrency(user.Wallet.ID, amount, int(rate), fromCurrency, toCurrency)
@@ -139,16 +137,6 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type balance struct {
-		RUB float64 `json:"RUB"`
-		USD float64 `json:"USD"`
-		EUR float64 `json:"EUR"`
-	}
-	type exchangeResponse struct {
-		Message         string  `json:"message"`
-		ExchangedAmount float64 `json:"exchanged_amount"`
-		NewBalance      balance `json:"new_balance"`
-	}
 	err = utils.WriteJSON(w, http.StatusOK, exchangeResponse{
 		Message:         "Exchange successful",
 		ExchangedAmount: receivedJson.Amount * float64(rate/100),

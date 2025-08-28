@@ -22,7 +22,8 @@ func Router(h *Handler) *chi.Mux {
 		// 	Заголовки:
 		// Authorization: Bearer JWT_TOKEN
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.JWTAuthenticator([]byte(h.JWTsource)))
+			r.Use(middleware.JWTAuthenticator([]byte(h.JWTsource)),
+				middleware.RetrieveUserFromDB(h.Models.Users))
 
 			r.Get("/balance", h.GetBalance)
 			r.Post("/deposit", h.TopUpBalance)

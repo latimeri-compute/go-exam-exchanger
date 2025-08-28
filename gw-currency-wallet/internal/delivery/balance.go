@@ -6,11 +6,9 @@ import (
 	"math"
 	"net/http"
 
-	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery/middleware"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/utils"
-	"gorm.io/gorm"
 )
 
 type fundsRequest struct {
@@ -26,28 +24,12 @@ type balanceResponse struct {
 
 // получение баланса
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
-	userId, ok := r.Context().Value("user").(middleware.ContextID)
+	user, ok := r.Context().Value("user").(storages.User)
 	if !ok {
-		h.Logger.Errorf("Ошибка получения id пользователя из контекста")
 		utils.InternalErrorResponse(w)
 		return
 	}
-	h.Logger.Debugf("Пользователь из контекста: %v", userId)
-
-	user := &storages.User{
-		Model: gorm.Model{
-			ID: uint(userId),
-		},
-	}
-	err := h.Models.Users.FindUser(user)
-	if err != nil {
-		// если пользователь не найден, то где-то между миддлвейром и этим хендлером что-то сломалось
-		h.Logger.Error("GetBalance: oшибка получения пользователя: ", err)
-		utils.InternalErrorResponse(w)
-		return
-	}
-	h.Logger.Debug("Найден пользователь в системе: ", user)
+	h.Logger.Debugf("Пользователь из контекста: %v", user)
 
 	wallet, err := h.Models.Wallets.GetBalance(user.ID)
 	if err != nil {
@@ -96,6 +78,8 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 
 // снятие с баланса
 func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
+	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
+
 	var receivedJson fundsRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
@@ -119,27 +103,12 @@ func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 
 // смена баланса, метод просто для уменьшения тавтологии
 func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount int, currency, method string) {
-	userId, ok := r.Context().Value("user").(middleware.ContextID)
+	user, ok := r.Context().Value("user").(storages.User)
 	if !ok {
-		h.Logger.Errorf("Ошибка получения id пользователя из контекста")
 		utils.InternalErrorResponse(w)
 		return
 	}
-	h.Logger.Debugf("Пользователь из контекста: %v", userId)
-
-	user := &storages.User{
-		Model: gorm.Model{
-			ID: uint(userId),
-		},
-	}
-	err := h.Models.Users.FindUser(user)
-	if err != nil {
-		// если пользователь не найден, то где-то между миддлвейром и этим хендлером что-то сломалось
-		h.Logger.Errorf("ошибка получения пользователя: %v", err)
-		utils.InternalErrorResponse(w)
-		return
-	}
-	h.Logger.Debugf("Найден пользователь в системе: %v", user)
+	h.Logger.Debugf("Пользователь из контекста: %v", user)
 
 	wallet, err := h.Models.Wallets.ChangeBalance(user.WalletID, amount, currency)
 	if err != nil {
