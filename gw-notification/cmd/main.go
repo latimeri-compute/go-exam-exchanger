@@ -9,8 +9,8 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/internal/brocker"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/internal/server"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/internal/storages/mongo"
-	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/server"
 	"go.uber.org/zap"
 )
 
