@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/utils"
@@ -22,7 +23,17 @@ type balanceResponse struct {
 	RUB float64 `json:"RUB"`
 }
 
-// получение баланса
+// GetBalance returns user's balance
+//
+//	@Summary	returns user's balance
+//	@Description
+//	@Tags		balance
+//	@Accept		json
+//	@Produce	json
+//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Success	200				{object}	delivery.balanceResponse			"Returns balance"
+//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Router		/balance [get]
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(storages.User)
 	if !ok {
@@ -33,7 +44,7 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 
 	wallet, err := h.Models.Wallets.GetBalance(user.ID)
 	if err != nil {
-		h.Logger.Error("GetBalance: ошибка получения баланса пользователя: ", err)
+		h.Logger.Error("ошибка получения баланса пользователя: ", err)
 		utils.InternalErrorResponse(w)
 		return
 	}
@@ -51,7 +62,17 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// пополнение баланса
+// TopUpBalance пополнение баланса
+//
+//	@Summary	top up user's balance
+//	@Description
+//	@Tags		balance
+//	@Accept		json
+//	@Produce	json
+//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Success	200				{object}	string								"returns updated balance"
+//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Router		/deposit [post]
 func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
 
@@ -62,7 +83,7 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
 		return
 	}
-	h.Logger.Debug("TopUpBalance: получен JSON: ", receivedJson)
+	h.Logger.Debug("получен JSON: ", receivedJson)
 
 	v := validator.NewValidator()
 	v.CheckBalanceChange(receivedJson.Amount, receivedJson.Currency)
@@ -76,7 +97,21 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 	h.ChangeBalance(w, r, amount, receivedJson.Currency, "deposit")
 }
 
-// снятие с баланса
+// WithdrawFromBalance снятие с баланса
+//
+//	@Summary	withdraw from user's balance
+//	@Description
+//	@Tags		balance
+//	@Accept		json
+//	@Produce	json
+//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Success	200				{object}	string								"returns updated balance"
+//	@Failure	400				{object}	delivery.errorInsufficientFunds		"Insufficient funds or invalid currencies"
+//
+//	@Failure	400				{object}	delivery.errorResponse				""
+//
+//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Router		/withdraw [post]
 func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
 
@@ -87,7 +122,7 @@ func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusUnprocessableEntity, utils.JSONEnveloper{"error": err}, nil)
 		return
 	}
-	h.Logger.Debugf("WithdrawFromBalance: получен JSON: %v\n", receivedJson)
+	h.Logger.Debugf("получен JSON: %v\n", receivedJson)
 
 	v := validator.NewValidator()
 	v.CheckBalanceChange(receivedJson.Amount, receivedJson.Currency)
@@ -120,6 +155,30 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 		}
 		return
 	}
+	go func() {
+		var t string
+		if amount >= 0 {
+			t = "deposit"
+		} else {
+			t = "withdraw"
+		}
+		if utils.Abs(amount) >= 3000000 {
+			mes := brocker.TransactionMessage{
+				WalletID:     wallet.ID,
+				Type:         t,
+				FromCurrency: currency,
+				AmountFrom:   utils.Abs(amount),
+				Timestamp:    wallet.UpdatedAt,
+			}
+
+			_, _, err := h.messenger.MessageTransaction("wallets_transactions", mes)
+			if err != nil {
+				h.Logger.DPanic(err)
+				h.Logger.Error("Ошибка отправления сообщения: ", err)
+			}
+		}
+	}()
+
 	balanceResponse := balanceResponse{
 		USD: float64(wallet.UsdBalance) / 100,
 		EUR: float64(wallet.EurBalance) / 100,

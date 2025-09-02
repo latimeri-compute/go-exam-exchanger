@@ -89,19 +89,6 @@ func UnpackJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 	return nil
 }
 
-// func FlagInitialization(DBcfg *postgres.DBOptions, serverConfig *server.C) {
-// 	flag.StringVar(&DBcfg.DBUser, "POSTGRES_USER", os.Getenv("POSTGRES_USER"), "имя пользователя postgres")
-// 	flag.StringVar(&DBcfg.DBPassword, "POSTGRES_PASSWORD", os.Getenv("POSTGRES_PASSWORD"), "пароль пользователя postgres")
-// 	flag.StringVar(&DBcfg.DBName, "POSTGRES_DB", os.Getenv("POSTGRES_DB"), "название базы данных postgres")
-// 	flag.StringVar(&DBcfg.DBHost, "POSTGRES_HOST", "localhost", "хост сервера postgres")
-// 	flag.IntVar(&DBcfg.DBPort, "POSTGRES_PORT", 5432, "порт сервера postgres")
-
-// 	flag.IntVar(&serverConfig.Port, "SERVER_PORT", 4001, "порт сервера API")
-// 	flag.StringVar(&serverConfig.JWTSecret, "JWT_SECRET", os.Getenv("JWT_SECRET"), "строка для генерации JWT")
-
-// 	flag.Parse()
-// }
-
 func Abs[T constraints.Signed](num T) T {
 	if num < 0 {
 		num = -num

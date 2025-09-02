@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -52,6 +53,12 @@ func NewServer(h *delivery.Handler, logger *zap.SugaredLogger, cfg Config) *Serv
 		logger: logger,
 	}
 	return Server
+}
+
+// после инициализации вызвать flag.Parse()
+func FlagInit(config *Config) {
+	flag.IntVar(&config.Port, "SERVER_PORT", 4001, "порт сервера API")
+	flag.StringVar(&config.JWTSecret, "JWT_SECRET", os.Getenv("JWT_SECRET"), "строка для генерации JWT")
 }
 
 // TODO graceful stopping?

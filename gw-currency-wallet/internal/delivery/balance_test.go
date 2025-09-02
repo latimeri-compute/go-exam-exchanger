@@ -25,13 +25,13 @@ func TestGetBalance(t *testing.T) {
 		{
 			name:       "несуществующий пользователь",
 			id:         99,
-			want:       `{"error":"Internal server error"}`,
-			wantStatus: http.StatusInternalServerError,
+			want:       `{"error":"unauthorized, check your token"}`,
+			wantStatus: http.StatusUnauthorized,
 		},
 	}
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, nil)
+	h := NewTestHandler(jwtString, nil, nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -73,13 +73,13 @@ func TestDeposit(t *testing.T) {
 			userId:     99,
 			amount:     100,
 			currency:   "usd",
-			want:       `{"error":"Internal server error"}`,
-			wantStatus: http.StatusInternalServerError,
+			want:       `{"error":"unauthorized, check your token"}`,
+			wantStatus: http.StatusUnauthorized,
 		},
 	}
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, nil)
+	h := NewTestHandler(jwtString, nil, nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -125,8 +125,8 @@ func TestWithdraw(t *testing.T) {
 			userId:     99,
 			amount:     100,
 			currency:   "usd",
-			want:       `{"error":"Internal server error"}`,
-			wantStatus: http.StatusInternalServerError,
+			want:       `{"error":"unauthorized, check your token"}`,
+			wantStatus: http.StatusUnauthorized,
 		},
 		{
 			name:       "слишком большая сумма для снятия",
@@ -139,7 +139,7 @@ func TestWithdraw(t *testing.T) {
 	}
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, nil)
+	h := NewTestHandler(jwtString, nil, nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 

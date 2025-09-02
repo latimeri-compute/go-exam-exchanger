@@ -13,13 +13,31 @@ import (
 )
 
 type loginJSON struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" example:"test@test.com"`
+	Password string `json:"password" example:"pa$$word"`
 }
 
+type registerJSON struct {
+	Username string `json:"username" example:"admin"`
+	Email    string `json:"email" example:"test@test.com"`
+	Password string `json:"password" example:"pa$$word"`
+}
+
+// RegisterUser registering new users
+//
+//	@Summary	create new user
+//	@Description
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		credentials	body		delivery.registerJSON		true	"Credentials"
+//	@Success	201			{object}	delivery.messageResponse	"User created"
+//	@Failure	400			{object}	delivery.errorResponse		"Username or email already exists"
+//	@Failure	400			{object}	delivery.errorResponse		"JSON fields didn't pass validation"
+//	@Failure	422			{object}	delivery.errorResponse		"Malformed json or invalid fields"
+//	@Router		/register [post]
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	var receivedJson loginJSON
+	var receivedJson registerJSON
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
 		h.Logger.Debugf("Ошибка распаковки json: %v", err)
@@ -45,6 +63,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newUser := &storages.User{
+		Username:     receivedJson.Username,
 		Email:        receivedJson.Email,
 		PasswordHash: bytes,
 	}
@@ -66,6 +85,19 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, utils.JSONEnveloper{"message": "User registered successfully"}, nil)
 }
 
+// LoginUser log into system
+//
+//	@Summary	produces JWT token on successfull login
+//	@Description
+//	@Tags		users
+//	@Accept		json
+//	@Produce	json
+//	@Param		credentials	body		delivery.loginJSON			true	"Credentials"
+//	@Success	200			{object}	delivery.messageResponse	"Successfully logged in"
+//	@Failure	400			{object}	delivery.errorResponse		"JSON fields didn't pass validation"
+//	@Failure	401			{object}	delivery.errorResponse		"Invalid credentials"
+//	@Failure	422			{object}	delivery.errorResponse		"Malformed json or invalid fields"
+//	@Router		/login [post]
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var receivedJson loginJSON
 	err := utils.UnpackJSON(w, r, &receivedJson)

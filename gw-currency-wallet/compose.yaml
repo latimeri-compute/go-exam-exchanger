@@ -36,7 +36,7 @@ services:
     volumes:
       - ./internal/storages/postgres/database_setup:/docker-entrypoint-initdb.d
     ports:
-      - 5430:5432
+      - 5431:5433
 volumes:
   db-data:
 secrets:

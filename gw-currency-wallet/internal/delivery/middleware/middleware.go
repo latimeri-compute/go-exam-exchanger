@@ -61,7 +61,7 @@ func RetrieveUserFromDB(userModel storages.UserModelInterface) func(http.Handler
 			err := userModel.FindUser(&user)
 			if err != nil {
 				if errors.Is(err, storages.ErrRecordNotFound) {
-					utils.UnauthorizedResponse(w, "unauthorized, check your token")
+					utils.UnauthorizedResponse(w, "Unauthorized")
 					return
 				} else {
 					utils.InternalErrorResponse(w)

@@ -1,0 +1,289 @@
+basePath: /api/v1
+definitions:
+  delivery.balance:
+    properties:
+      EUR:
+        type: number
+      RUB:
+        type: number
+      USD:
+        type: number
+    type: object
+  delivery.balanceResponse:
+    properties:
+      EUR:
+        type: number
+      RUB:
+        type: number
+      USD:
+        type: number
+    type: object
+  delivery.errorInsufficientFunds:
+    properties:
+      error:
+        example: Insufficient funds or invalid currencies
+        type: string
+    type: object
+  delivery.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  delivery.errorUnauthorizedResponse:
+    properties:
+      error:
+        example: Unauthorized
+        type: string
+    type: object
+  delivery.exchangeRequest:
+    properties:
+      amount:
+        type: number
+      from_currency:
+        type: string
+      to_currency:
+        type: string
+    type: object
+  delivery.exchangeResponse:
+    properties:
+      exchanged_amount:
+        type: number
+      message:
+        type: string
+      new_balance:
+        $ref: '#/definitions/delivery.balance'
+    type: object
+  delivery.loginJSON:
+    properties:
+      email:
+        example: test@test.com
+        type: string
+      password:
+        example: pa$$word
+        type: string
+    type: object
+  delivery.messageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  delivery.registerJSON:
+    properties:
+      email:
+        example: test@test.com
+        type: string
+      password:
+        example: pa$$word
+        type: string
+      username:
+        example: admin
+        type: string
+    type: object
+info:
+  contact: {}
+  description: wallet API supporting exchange between currencies
+  title: wallet API
+  version: "0.9"
+paths:
+  /balance:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: JWT
+        example: '"BEARER {JWT}"'
+        in: header
+        name: Authentication
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns balance
+          schema:
+            $ref: '#/definitions/delivery.balanceResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/delivery.errorUnauthorizedResponse'
+      summary: returns user's balance
+      tags:
+      - balance
+  /deposit:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: JWT
+        example: '"BEARER {JWT}"'
+        in: header
+        name: Authentication
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: returns updated balance
+          schema:
+            type: string
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/delivery.errorUnauthorizedResponse'
+      summary: top up user's balance
+      tags:
+      - balance
+  /exchange:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: JWT
+        example: '"BEARER {JWT}"'
+        in: header
+        name: Authentication
+        required: true
+        type: string
+      - description: Exchange funds request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/delivery.exchangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns updated balance and exchanged amount
+          schema:
+            $ref: '#/definitions/delivery.exchangeResponse'
+        "400":
+          description: Insufficient funds or invalid currencies
+          schema:
+            $ref: '#/definitions/delivery.errorInsufficientFunds'
+        "401":
+          description: "Invalid credentials\"\texample(error:Unauthorized)"
+          schema:
+            $ref: '#/definitions/delivery.errorUnauthorizedResponse'
+      summary: exchange funds
+      tags:
+      - exchange
+  /exchange/rates:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: JWT
+        example: '"BEARER {JWT}"'
+        in: header
+        name: Authentication
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns exchange rates
+          schema:
+            type: string
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/delivery.errorUnauthorizedResponse'
+      summary: returns exchange rates
+      tags:
+      - exchange
+  /login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/delivery.loginJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged in
+          schema:
+            $ref: '#/definitions/delivery.messageResponse'
+        "400":
+          description: JSON fields didn't pass validation
+          schema:
+            $ref: '#/definitions/delivery.errorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/delivery.errorResponse'
+        "422":
+          description: Malformed json or invalid fields
+          schema:
+            $ref: '#/definitions/delivery.errorResponse'
+      summary: produces JWT token on successfull login
+      tags:
+      - users
+  /register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/delivery.registerJSON'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created
+          schema:
+            $ref: '#/definitions/delivery.messageResponse'
+        "400":
+          description: JSON fields didn't pass validation
+          schema:
+            $ref: '#/definitions/delivery.errorResponse'
+        "422":
+          description: Malformed json or invalid fields
+          schema:
+            $ref: '#/definitions/delivery.errorResponse'
+      summary: create new user
+      tags:
+      - users
+  /withdraw:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: JWT
+        example: '"BEARER {JWT}"'
+        in: header
+        name: Authentication
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: returns updated balance
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/delivery.errorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/delivery.errorUnauthorizedResponse'
+      summary: withdraw from user's balance
+      tags:
+      - balance
+swagger: "2.0"

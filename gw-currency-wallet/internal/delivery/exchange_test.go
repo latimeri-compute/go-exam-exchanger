@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
 	mock_storages "github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages/mocks"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/testutils"
@@ -30,8 +31,8 @@ func TestGetRates(t *testing.T) {
 		{
 			name:       "несуществующий пользователь",
 			userId:     99,
-			wantBody:   `{"error":"Internal server error"}`,
-			wantStatus: http.StatusInternalServerError,
+			wantBody:   `{"error":"unauthorized, check your token"}`,
+			wantStatus: http.StatusUnauthorized,
 		},
 	}
 
@@ -49,13 +50,7 @@ func TestGetRates(t *testing.T) {
 	defer conn.Close()
 
 	jwtString := "string!"
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		t.Fatal(err)
-	}
-	m := mock_storages.NewMockModels()
-	h := NewHandler(m, logger.Sugar(), pb.NewExchangeServiceClient(conn), jwtString)
-	// h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn))
+	h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn), &brocker.Producer{})
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -99,8 +94,8 @@ func TestExchangeFunds(t *testing.T) {
 			from:       "usd",
 			to:         "rub",
 			amount:     20,
-			wantBody:   `{"error":"Internal server error"}`,
-			wantStatus: http.StatusInternalServerError,
+			wantBody:   `{"error":"unauthorized, check your token"}`,
+			wantStatus: http.StatusUnauthorized,
 		},
 		{
 			name:       "сумма превышает баланс",
@@ -127,7 +122,11 @@ func TestExchangeFunds(t *testing.T) {
 	defer conn.Close()
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn))
+	logger, _ := zap.NewDevelopment()
+	m := mock_storages.NewMockModels()
+
+	h := NewHandler(m, logger.Sugar(), pb.NewExchangeServiceClient(conn), &brocker.Producer{}, jwtString)
+	// h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn), nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 

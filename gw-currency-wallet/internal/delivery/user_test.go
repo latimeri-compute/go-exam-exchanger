@@ -43,7 +43,7 @@ func TestRegisterUser(t *testing.T) {
 		},
 	}
 
-	h := NewTestHandler("a", nil)
+	h := NewTestHandler("a", nil, nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -95,11 +95,11 @@ func TestLoginUser(t *testing.T) {
 			email:        mock_storages.ValidUser.Email,
 			password:     "wrongpassword",
 			wantContains: `{"error":"Invalid username or password"}`,
-			wantStatus:   http.StatusBadRequest,
+			wantStatus:   http.StatusUnauthorized,
 		},
 	}
 
-	h := NewTestHandler("a", nil)
+	h := NewTestHandler("a", nil, nil)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
@@ -21,6 +22,17 @@ type exchangeRequest struct {
 	Amount       float64 `json:"amount"`
 }
 
+// GetExchangeRates возвращает курс валют
+//
+//	@Summary	returns exchange rates
+//	@Description
+//	@Tags		exchange
+//	@Accept		json
+//	@Produce	json
+//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Success	200				{object}	string								"Returns exchange rates"
+//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Router		/exchange/rates [get]
 func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 	rates, ok := h.exchangeCache.Get("all_rates")
 	h.Logger.Debugf("существование курса валют в кеше: %v, полученный курс из кеша: %v, ", ok, rates)
@@ -32,7 +44,7 @@ func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 		h.Logger.Debug("запрос на удалённый сервер...")
 		response, err := grpcclient.GetOnlyRates(h.ExchangeClient, ctx)
 		if err != nil {
-			h.Logger.Errorf("GetExchangeRates Ошибка получения курса валют: ", err)
+			h.Logger.Errorf("Ошибка получения курса валют: ", err)
 			utils.InternalErrorResponse(w)
 			return
 		}
@@ -68,6 +80,19 @@ type exchangeResponse struct {
 	NewBalance      balance `json:"new_balance"`
 }
 
+// ExchangeFunds
+//
+//	@Summary	exchange funds
+//	@Description
+//	@Tags		exchange
+//	@Accept		json
+//	@Produce	json
+//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Param		request			body		delivery.exchangeRequest			true	"Exchange funds request"
+//	@Success	200				{object}	delivery.exchangeResponse			"Returns updated balance and exchanged amount"
+//	@Failure	400				{object}	delivery.errorInsufficientFunds		"Insufficient funds or invalid currencies"
+//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"	example(error:Unauthorized)
+//	@Router		/exchange [post]
 func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 	// ew what an ugly bastard
 	// TODO вынести структуры в более подходящее место
@@ -80,7 +105,7 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		utils.UnprocessableEntityResponse(w, utils.JSONEnveloper{"error": err})
 		return
 	}
-	h.Logger.Debugf("ExchangeFunds: получен JSON: %v\n", receivedJson)
+	h.Logger.Debugf("получен JSON: %v\n", receivedJson)
 
 	fromCurrency := strings.ToLower(receivedJson.FromCurrency)
 	toCurrency := strings.ToLower(receivedJson.ToCurrency)
@@ -105,7 +130,9 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		rate = float32(math.Round(float64(rate * 100)))
+		rate = rate * 100
+
+		h.Logger.Debug("полученный курс: ", rate)
 
 		h.exchangeCache.Set(dir, []ExchangeCachedItem{{
 			FromCurrency: fromCurrency,
@@ -115,6 +142,7 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		rate = cache[0].Rate
+		h.Logger.Debug("Курс из кеша: ", rate)
 	}
 
 	user, ok := r.Context().Value("user").(storages.User)
@@ -137,9 +165,31 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exchangedAmount := receivedJson.Amount * float64(rate/100)
+
+	go func() {
+		if exchangedAmount >= 30000 || receivedJson.Amount >= 30000 {
+			mes := brocker.TransactionMessage{
+				WalletID:     wallet.ID,
+				Type:         "exchange",
+				FromCurrency: fromCurrency,
+				ToCurrency:   toCurrency,
+				AmountFrom:   int(receivedJson.Amount * 100),
+				AmountTo:     int(exchangedAmount * 100),
+				Timestamp:    wallet.UpdatedAt,
+			}
+
+			_, _, err := h.messenger.MessageTransaction("wallets_transactions", mes)
+			if err != nil {
+				h.Logger.DPanic(err)
+				h.Logger.Error("Ошибка отправления сообщения: ", err)
+			}
+		}
+	}()
+
 	err = utils.WriteJSON(w, http.StatusOK, exchangeResponse{
 		Message:         "Exchange successful",
-		ExchangedAmount: receivedJson.Amount * float64(rate/100),
+		ExchangedAmount: exchangedAmount, // почему не работает..
 		NewBalance: balance{
 			USD: float64(wallet.UsdBalance),
 			RUB: float64(wallet.RubBalance),

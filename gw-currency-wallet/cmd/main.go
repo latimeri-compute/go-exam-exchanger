@@ -4,10 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/server"
@@ -16,8 +16,12 @@ import (
 	"go.uber.org/zap"
 )
 
+//	@title			wallet API
+//	@version		0.9
+//	@description	wallet API supporting exchange between currencies
+
 func main() {
-	logger, err := zap.NewDevelopment()
+	logger, err := zap.NewDevelopment(zap.AddStacktrace(zap.ErrorLevel), zap.AddCaller())
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -37,14 +41,8 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	flag.StringVar(&DBcfg.DBUser, "POSTGRES_USER", os.Getenv("POSTGRES_USER"), "имя пользователя postgres")
-	flag.StringVar(&DBcfg.DBPassword, "POSTGRES_PASSWORD", os.Getenv("POSTGRES_PASSWORD"), "пароль пользователя postgres")
-	flag.StringVar(&DBcfg.DBName, "POSTGRES_DB", os.Getenv("POSTGRES_DB"), "название базы данных postgres")
-	flag.StringVar(&DBcfg.DBHost, "POSTGRES_HOST", "localhost", "хост сервера postgres")
-	flag.IntVar(&DBcfg.DBPort, "POSTGRES_PORT", 5432, "порт сервера postgres")
-
-	flag.IntVar(&serverConfig.Port, "SERVER_PORT", 4001, "порт сервера API")
-	flag.StringVar(&serverConfig.JWTSecret, "JWT_SECRET", os.Getenv("JWT_SECRET"), "строка для генерации JWT")
+	postgres.InitFlags(&DBcfg)
+	server.FlagInit(&serverConfig)
 
 	gaddress := flag.String("gRPC address", "localhost:4000", "адрес удалённого grpc сервера")
 
@@ -63,14 +61,21 @@ func main() {
 	}
 
 	gclient, err := grpcclient.NewClient(*gaddress)
-	sugar.Error("ошибка создания grpc клиента: ", err.Error())
+	if err != nil {
+		sugar.Error("ошибка создания grpc клиента: ", err.Error())
+		return
+	}
 
+	messageProducer, err := brocker.New(":9092")
+	if err != nil {
+		sugar.Error("Ошибка создания продюсера сообщений: ", err)
+	}
 	m := postgres.NewModels(db)
-	h := delivery.NewHandler(m, logger.Sugar(), gclient, serverConfig.JWTSecret)
+	h := delivery.NewHandler(m, logger.Sugar(), gclient, messageProducer, serverConfig.JWTSecret)
 
 	srv := server.NewServer(h, logger.Sugar(), serverConfig)
 
 	sugar.Infof("Запуск сервера, адрес: %s", srv.Server.Addr)
 	err = srv.Serve()
-	logger.Error(err.Error())
+	sugar.Error(err)
 }
