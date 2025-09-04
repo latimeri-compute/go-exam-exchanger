@@ -20,22 +20,40 @@ services:
 
       # Required for a single node cluster
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  kafka-ui:
+    image: kafbat/kafka-ui:main
+    environment:
+      DYNAMIC_CONFIG_ENABLED: true
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+    depends_on:
+      - kafka
   mongodb:
     image: mongo:8.0.13
     restart: always
+    environment:
+      - MONGO_PORT=27017
     env_file:
       - config.env
     ports:
-      - 27016:${MONGO_PORT}
+      - 27016:27017
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo db:27017/mydb --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
   go:
     build:
       context: .
       target: final
+    env_file:
+      - config.env
     depends_on:
-      - kafka
-      - mongodb
+      kafka:
+        condition: service_started
+      mongodb:
+        condition: service_healthy
     ports:
-      - 8010:${SERVER_PORT}
-
+      - 8010:8010
 volumes:
    mongo-data:

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/internal/storages"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/utils"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -26,13 +27,14 @@ func NewWalletClient(client *mongo.Client) *WalletClient {
 	return &WalletClient{coll}
 }
 
-func (c *WalletClient) Insert(transaction storages.Transaction, ctx context.Context) error {
-	_, err := c.InsertOne(ctx, transaction)
-	return err
+func (c *WalletClient) Insert(transaction storages.Transaction, ctx context.Context) (any, error) {
+	res, err := c.InsertOne(ctx, transaction)
+	return res.InsertedID, err
 }
 
-func (c *WalletClient) Get(transaction *storages.Transaction, ctx context.Context) ([]storages.Transaction, error) {
-	cursor, err := c.Find(ctx, transaction)
+func (c *WalletClient) Get(transaction storages.Transaction, ctx context.Context) ([]storages.Transaction, error) {
+	filters := utils.StructToBson(transaction)
+	cursor, err := c.Find(ctx, filters)
 	if err != nil {
 		return nil, err
 	}

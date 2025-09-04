@@ -56,7 +56,7 @@ func (s *Server) Start() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 			defer cancel()
 
-			err := s.Transactions.Insert(transaction, ctx)
+			_, err := s.Transactions.Insert(transaction, ctx)
 			if err != nil {
 				s.logger.DPanic("Ошибка добавления документа в базу данных: ", err)
 				s.logger.Error("Ошибка добавления документа в базу данных: ", err)
