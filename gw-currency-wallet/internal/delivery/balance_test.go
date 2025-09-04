@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/IBM/sarama/mocks"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +33,9 @@ func TestGetBalance(t *testing.T) {
 	}
 
 	jwtString := "string!"
+
 	h := NewTestHandler(jwtString, nil, nil)
+
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -63,7 +67,7 @@ func TestDeposit(t *testing.T) {
 		{
 			name:       "существующий пользователь",
 			userId:     1,
-			amount:     80.97,
+			amount:     8000000000.97,
 			currency:   "rub",
 			want:       `{"message":"deposit successful","new_balance":{"USD":100,"EUR":100,"RUB":180.97}}`,
 			wantStatus: http.StatusOK,
@@ -73,13 +77,16 @@ func TestDeposit(t *testing.T) {
 			userId:     99,
 			amount:     100,
 			currency:   "usd",
-			want:       `{"error":"unauthorized, check your token"}`,
+			want:       `{"error":"Unauthorized"}`,
 			wantStatus: http.StatusUnauthorized,
 		},
 	}
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, nil, nil)
+	producer := mocks.NewSyncProducer(t, nil).ExpectSendMessageAndSucceed()
+	p := brocker.NewTestProducer(t, producer)
+	h := NewTestHandler(jwtString, nil, p)
+
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
@@ -125,7 +132,7 @@ func TestWithdraw(t *testing.T) {
 			userId:     99,
 			amount:     100,
 			currency:   "usd",
-			want:       `{"error":"unauthorized, check your token"}`,
+			want:       `{"error":"Unauthorized"}`,
 			wantStatus: http.StatusUnauthorized,
 		},
 		{
@@ -139,7 +146,9 @@ func TestWithdraw(t *testing.T) {
 	}
 
 	jwtString := "string!"
-	h := NewTestHandler(jwtString, nil, nil)
+	producer := mocks.NewSyncProducer(t, nil).ExpectSendMessageAndSucceed()
+	h := NewTestHandler(jwtString, nil, brocker.NewTestProducer(t, producer))
+
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 

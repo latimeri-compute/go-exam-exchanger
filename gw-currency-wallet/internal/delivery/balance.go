@@ -162,7 +162,7 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 		} else {
 			t = "withdraw"
 		}
-		if utils.Abs(amount) >= 3000000 {
+		if utils.Abs(amount) >= 30_000_00 {
 			mes := brocker.TransactionMessage{
 				WalletID:     wallet.ID,
 				Type:         t,

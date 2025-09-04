@@ -32,6 +32,6 @@ func InitFlags(DBcfg *DBOptions) {
 	flag.StringVar(&DBcfg.DBUser, "POSTGRES_USER", os.Getenv("POSTGRES_USER"), "имя пользователя postgres")
 	flag.StringVar(&DBcfg.DBPassword, "POSTGRES_PASSWORD", os.Getenv("POSTGRES_PASSWORD"), "пароль пользователя postgres")
 	flag.StringVar(&DBcfg.DBName, "POSTGRES_DB", os.Getenv("POSTGRES_DB"), "название базы данных postgres")
-	flag.StringVar(&DBcfg.DBHost, "POSTGRES_HOST", "localhost", "хост сервера postgres")
+	flag.StringVar(&DBcfg.DBHost, "POSTGRES_HOST", os.Getenv("POSTGRES_HOST"), "хост сервера postgres")
 	flag.IntVar(&DBcfg.DBPort, "POSTGRES_PORT", 5432, "порт сервера postgres")
 }

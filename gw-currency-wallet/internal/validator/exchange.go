@@ -10,4 +10,5 @@ func ValidateExchangeRequest[T constraints.Integer | constraints.Float](v *Valid
 	v.Check(IsPermittedValue(fromCurrency, AllowedCurrency...), "from_currency", "currency not supported")
 	v.Check(IsPermittedValue(toCurrency, AllowedCurrency...), "to_currency", "currency not supported")
 	v.Check(amount > 0, "amount", "cannot be less or equal to zero")
+	v.Check(fromCurrency != toCurrency, "currency", "source and target currencies cannot be the same")
 }

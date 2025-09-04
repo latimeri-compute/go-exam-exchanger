@@ -6,7 +6,6 @@ require (
 	github.com/IBM/sarama v1.46.0
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/render v1.0.3
-	github.com/joho/godotenv v1.5.1
 	github.com/latimeri-compute/go-exam-exchanger/proto-exchange v0.0.0-20250818133515-a5d7ca8ed85c
 	github.com/pascaldekloe/jwt v1.12.0
 	github.com/stretchr/testify v1.11.0

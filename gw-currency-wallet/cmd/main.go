@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
@@ -20,6 +19,29 @@ import (
 //	@version		0.9
 //	@description	wallet API supporting exchange between currencies
 
+var (
+	dbCfg        postgres.DBOptions
+	serverConfig = server.Config{
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	dsn         = ""
+	grpcAddress = "localhost:4000"
+)
+
+func init() {
+	// err := godotenv.Load("../config.env")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	postgres.InitFlags(&dbCfg)
+	server.FlagInit(&serverConfig)
+	flag.StringVar(&grpcAddress, "gRPC address", "localhost:4000", "адрес удалённого grpc сервера")
+	flag.Parse()
+	dsn = fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", dbCfg.DBUser, dbCfg.DBPassword, dbCfg.DBHost, dbCfg.DBPort, dbCfg.DBName)
+}
+
 func main() {
 	logger, err := zap.NewDevelopment(zap.AddStacktrace(zap.ErrorLevel), zap.AddCaller())
 	if err != nil {
@@ -29,26 +51,6 @@ func main() {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
-	err = godotenv.Load("../config.env")
-	if err != nil {
-		logger.Error(err.Error())
-		return
-	}
-
-	var DBcfg postgres.DBOptions
-	serverConfig := server.Config{
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-	}
-	postgres.InitFlags(&DBcfg)
-	server.FlagInit(&serverConfig)
-
-	gaddress := flag.String("gRPC address", "localhost:4000", "адрес удалённого grpc сервера")
-
-	flag.Parse()
-
-	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", DBcfg.DBUser, DBcfg.DBPassword, DBcfg.DBHost, DBcfg.DBPort, DBcfg.DBName)
 	db, err := postgres.NewConnection(dsn)
 	if err != nil {
 		sugar.Fatalf("Ошибка соединения с базой данных: %v", err)
@@ -60,7 +62,7 @@ func main() {
 		sugar.Errorf("Ошибка автомиграции: %v", err)
 	}
 
-	gclient, err := grpcclient.NewClient(*gaddress)
+	gclient, err := grpcclient.NewClient(grpcAddress)
 	if err != nil {
 		sugar.Error("ошибка создания grpc клиента: ", err.Error())
 		return
@@ -77,5 +79,7 @@ func main() {
 
 	sugar.Infof("Запуск сервера, адрес: %s", srv.Server.Addr)
 	err = srv.Serve()
-	sugar.Error(err)
+	if err != nil {
+		sugar.Error(err)
+	}
 }

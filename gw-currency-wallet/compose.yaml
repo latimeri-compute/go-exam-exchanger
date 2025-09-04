@@ -13,12 +13,16 @@ services:
     build:
       context: .
       target: final
+    environment:
+      - POSTGRES_HOST=db_wallet
     env_file:
       - config.env
     ports:
       - 4001:4001
     depends_on:
-      - db_wallet
+      db_wallet:
+        condition: service_healthy
+        restart: true
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -33,10 +37,19 @@ services:
     restart: always
     env_file:
       - config.env
+    environment:
+      - POSTGRES_DB=wallets
+      - POSTGRES_USER=postgres
     volumes:
       - ./internal/storages/postgres/database_setup:/docker-entrypoint-initdb.d
     ports:
       - 5431:5433
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
 volumes:
   db-data:
 secrets:

@@ -94,10 +94,6 @@ type exchangeResponse struct {
 //	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"	example(error:Unauthorized)
 //	@Router		/exchange [post]
 func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
-	// ew what an ugly bastard
-	// TODO вынести структуры в более подходящее место
-	// TODO в принципе облагородить метод
-
 	var receivedJson exchangeRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
 	if err != nil {
@@ -165,10 +161,11 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exchangedAmount := receivedJson.Amount * float64(rate/100)
+	exchangedAmount := float64(amount) * float64(rate) / 100
+	h.Logger.Debug(exchangedAmount)
 
 	go func() {
-		if exchangedAmount >= 30000 || receivedJson.Amount >= 30000 {
+		if exchangedAmount >= 30_000 || amount >= 30_000_00 {
 			mes := brocker.TransactionMessage{
 				WalletID:     wallet.ID,
 				Type:         "exchange",
@@ -189,7 +186,7 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.WriteJSON(w, http.StatusOK, exchangeResponse{
 		Message:         "Exchange successful",
-		ExchangedAmount: exchangedAmount, // почему не работает..
+		ExchangedAmount: exchangedAmount, // TODO почему не работает..
 		NewBalance: balance{
 			USD: float64(wallet.UsdBalance),
 			RUB: float64(wallet.RubBalance),

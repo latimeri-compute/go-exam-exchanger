@@ -77,7 +77,7 @@ func (s *Server) Serve() error {
 		// read signal from the quit channel. Will block until signal is received
 		signal := <-quit
 
-		s.logger.Info("shutting down server", "signal", signal.String())
+		s.logger.Info("Остановка сервера. Сигнал: ", signal.String())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -87,13 +87,13 @@ func (s *Server) Serve() error {
 			shutdownError <- err
 		}
 
-		s.logger.Info("completing background tasks", "addr", s.Server.Addr)
+		s.logger.Info("completing background tasks", s.Server.Addr)
 
 		s.waitgroup.Wait()
 		shutdownError <- nil
 	}()
 
-	s.logger.Info("starting server", "addr", s.Cfg.Addr, "port", s.Cfg.Port)
+	s.logger.Info("Запуск сервера: ", s.Cfg.Addr, s.Cfg.Port)
 
 	err := s.Server.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -105,7 +105,7 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	s.logger.Info("stopped server", "addr", s.Server.Addr)
+	s.logger.Info("сервер остановлен ", s.Server.Addr)
 
 	return nil
 }

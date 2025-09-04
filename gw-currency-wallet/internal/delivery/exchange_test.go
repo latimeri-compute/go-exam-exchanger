@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/IBM/sarama/mocks"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/brocker"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/grpcclient"
 	mock_storages "github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/storages/mocks"
@@ -94,7 +95,7 @@ func TestExchangeFunds(t *testing.T) {
 			from:       "usd",
 			to:         "rub",
 			amount:     20,
-			wantBody:   `{"error":"unauthorized, check your token"}`,
+			wantBody:   `{"error":"Unauthorized"}`,
 			wantStatus: http.StatusUnauthorized,
 		},
 		{
@@ -122,11 +123,10 @@ func TestExchangeFunds(t *testing.T) {
 	defer conn.Close()
 
 	jwtString := "string!"
-	logger, _ := zap.NewDevelopment()
-	m := mock_storages.NewMockModels()
-
-	h := NewHandler(m, logger.Sugar(), pb.NewExchangeServiceClient(conn), &brocker.Producer{}, jwtString)
-	// h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn), nil)
+	producer := mocks.NewSyncProducer(t, nil).ExpectSendMessageAndSucceed()
+	// h := NewTestHandler(jwtString, pb.NewExchangeServiceClient(conn), brocker.NewTestProducer(t, producer))
+	log, _ := zap.NewDevelopment()
+	h := NewHandler(mock_storages.NewMockModels(), log.Sugar(), pb.NewExchangeServiceClient(conn), brocker.NewTestProducer(t, producer), jwtString)
 	srv := httptest.NewServer(Router(h))
 	defer srv.Close()
 
