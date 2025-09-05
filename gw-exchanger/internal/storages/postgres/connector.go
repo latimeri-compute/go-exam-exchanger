@@ -6,14 +6,17 @@ import (
 )
 
 type DB struct {
-	DB *gorm.DB
+	*gorm.DB
 }
 
-func NewConnection(dsn string, cfg *gorm.Config) (*DB, error) {
-	db, err := gorm.Open(postgres.Open(dsn), cfg)
+func NewConnection(dsn string) (*DB, error) {
+	cfg := []gorm.Option{
+		&gorm.Config{TranslateError: true},
+	}
+	db, err := gorm.Open(postgres.Open(dsn), cfg...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DB{DB: db}, nil
+	return &DB{db}, nil
 }

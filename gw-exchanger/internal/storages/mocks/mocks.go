@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
-	"gorm.io/gorm"
 )
 
 var (
@@ -110,7 +109,7 @@ func (m *MockExchange) GetRateBetween(fromValute, toValute string) (storages.Ret
 		}
 	}
 	if res.FromValuteCode == "" {
-		return storages.ReturnExchanges{}, gorm.ErrRecordNotFound
+		return storages.ReturnExchanges{}, storages.ErrNotFound
 	}
 	return res, nil
 }

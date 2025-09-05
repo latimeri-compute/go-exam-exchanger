@@ -14,22 +14,23 @@ import (
 	"go.uber.org/zap"
 )
 
-func init() {
+var (
+	producerAddr string
+	mongoUri     string
+)
 
+func init() {
+	flag.StringVar(&producerAddr, "адрес продюсера сообщений", "", "")
+	flag.StringVar(&mongoUri, "строка подключения MongoDB", "", "")
+	flag.Parse()
 }
 
 func main() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer logger.Sync()
-
-	var producerAddr string
-	var mongoUri string
-	flag.StringVar(&producerAddr, "адрес продюсера сообщений", "", "")
-	flag.StringVar(&mongoUri, "строка подключения MongoDB", "", "")
-	flag.Parse()
 
 	sarama.Logger = log.New(os.Stdout, "[sarama]", log.LstdFlags)
 

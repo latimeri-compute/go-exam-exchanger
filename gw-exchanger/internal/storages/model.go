@@ -1,8 +1,11 @@
 package storages
 
 import (
+	"errors"
 	"time"
 )
+
+var ErrNotFound = errors.New("Record not found")
 
 type Valute struct {
 	ID       int    `gorm:"primaryKey"`
@@ -22,7 +25,7 @@ type Exchange struct {
 }
 
 type ReturnExchanges struct {
-	FromValuteCode string
-	ToValuteCode   string
+	FromValuteCode string `gorm:"from_valute_code"`
+	ToValuteCode   string `gorm:"to_valute_code"`
 	Rate           uint64
 }

@@ -13,14 +13,14 @@ import (
 )
 
 type fundsRequest struct {
-	Amount   float64 `json:"amount"`
-	Currency string  `json:"currency"` // (USD, RUB, EUR)
+	Amount   float64 `json:"amount" example:"234.56"`
+	Currency string  `json:"currency" example:"rub"` // (USD, RUB, EUR)
 }
 
 type balanceResponse struct {
-	USD float64 `json:"USD"`
-	EUR float64 `json:"EUR"`
-	RUB float64 `json:"RUB"`
+	USD utils.Currency `json:"USD" example:"120.00"`
+	EUR utils.Currency `json:"EUR" example:"10.00"`
+	RUB utils.Currency `json:"RUB" example:"45.50"`
 }
 
 // GetBalance returns user's balance
@@ -30,7 +30,7 @@ type balanceResponse struct {
 //	@Tags		balance
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
 //	@Success	200				{object}	delivery.balanceResponse			"Returns balance"
 //	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/balance [get]
@@ -42,7 +42,7 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Logger.Debugf("Пользователь из контекста: %v", user)
 
-	wallet, err := h.Models.Wallets.GetBalance(user.ID)
+	wallet, err := h.Models.Wallets.GetBalance(user.WalletID)
 	if err != nil {
 		h.Logger.Error("ошибка получения баланса пользователя: ", err)
 		utils.InternalErrorResponse(w)
@@ -51,9 +51,9 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("Баланс пользователя: ", wallet)
 
 	balanceResponse := balanceResponse{
-		USD: float64(wallet.UsdBalance) / 100,
-		EUR: float64(wallet.EurBalance) / 100,
-		RUB: float64(wallet.RubBalance) / 100,
+		USD: utils.Currency(wallet.UsdBalance) / 100,
+		EUR: utils.Currency(wallet.EurBalance) / 100,
+		RUB: utils.Currency(wallet.RubBalance) / 100,
 	}
 	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"balance": balanceResponse}, nil)
 	if err != nil {
@@ -69,12 +69,13 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 //	@Tags		balance
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Param		request			body		delivery.fundsRequest				true	"top up request"
 //	@Success	200				{object}	string								"returns updated balance"
 //	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/deposit [post]
 func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
+	h.Logger.Debug("Получен JST ", r.Header.Get("Authorization"))
 
 	var receivedJson fundsRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
@@ -104,16 +105,15 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 //	@Tags		balance
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Param		request			body		delivery.fundsRequest				true	"withdrawal request"
 //	@Success	200				{object}	string								"returns updated balance"
 //	@Failure	400				{object}	delivery.errorInsufficientFunds		"Insufficient funds or invalid currencies"
-//
 //	@Failure	400				{object}	delivery.errorResponse				""
-//
 //	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/withdraw [post]
 func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
-	h.Logger.Debug("Получен JST ", r.Header.Get("Authentication"))
+	h.Logger.Debug("Получен JST ", r.Header.Get("Authorization"))
 
 	var receivedJson fundsRequest
 	err := utils.UnpackJSON(w, r, &receivedJson)
@@ -180,9 +180,9 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 	}()
 
 	balanceResponse := balanceResponse{
-		USD: float64(wallet.UsdBalance) / 100,
-		EUR: float64(wallet.EurBalance) / 100,
-		RUB: float64(wallet.RubBalance) / 100,
+		USD: utils.Currency(wallet.UsdBalance) / 100,
+		EUR: utils.Currency(wallet.EurBalance) / 100,
+		RUB: utils.Currency(wallet.RubBalance) / 100,
 	}
 	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"message": fmt.Sprintf("%s successful", method), "new_balance": balanceResponse}, nil)
 	if err != nil {

@@ -1,6 +1,11 @@
 package postgres
 
-import "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
+import (
+	"errors"
+
+	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
+	"gorm.io/gorm"
+)
 
 func (db *DB) GetAll() ([]storages.ReturnExchanges, error) {
 	var results []storages.ReturnExchanges
@@ -29,6 +34,9 @@ func (db *DB) GetRateBetween(fromValute, toValute string) (storages.ReturnExchan
 		First(&results).Error
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return storages.ReturnExchanges{}, storages.ErrNotFound
+		}
 		return storages.ReturnExchanges{}, err
 	}
 

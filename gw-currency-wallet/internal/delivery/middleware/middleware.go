@@ -54,6 +54,7 @@ func RetrieveUserFromDB(userModel storages.UserModelInterface) func(http.Handler
 			id, ok := r.Context().Value("userId").(ContextID)
 			if !ok {
 				utils.InternalErrorResponse(w)
+				return
 			}
 
 			var user storages.User
@@ -62,11 +63,10 @@ func RetrieveUserFromDB(userModel storages.UserModelInterface) func(http.Handler
 			if err != nil {
 				if errors.Is(err, storages.ErrRecordNotFound) {
 					utils.UnauthorizedResponse(w, "Unauthorized")
-					return
 				} else {
 					utils.InternalErrorResponse(w)
-					return
 				}
+				return
 			}
 
 			r = r.WithContext(

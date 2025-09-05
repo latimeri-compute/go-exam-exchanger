@@ -54,6 +54,6 @@ services:
       mongodb:
         condition: service_healthy
     ports:
-      - 8010:8010
+      - 4030:4030
 volumes:
    mongo-data:

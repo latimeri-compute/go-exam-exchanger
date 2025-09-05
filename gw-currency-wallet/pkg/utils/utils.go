@@ -14,6 +14,8 @@ import (
 // структура для упрощения синтаксиса
 type JSONEnveloper map[string]any
 
+type Currency float64
+
 // обрабатывает полученный json
 func UnpackJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 	// установка максимального размер данных
@@ -94,4 +96,10 @@ func Abs[T constraints.Signed](num T) T {
 		num = -num
 	}
 	return num
+}
+
+func (c *Currency) MarshalJSON() ([]byte, error) {
+	f := float64(*c)
+	res := fmt.Appendf(nil, "%.2f", f)
+	return res, nil
 }

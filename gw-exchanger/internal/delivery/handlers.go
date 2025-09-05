@@ -7,7 +7,6 @@ import (
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
 	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
-	"gorm.io/gorm"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -56,10 +55,11 @@ func (h *Handler) GetExchangeRateForCurrency(ctx context.Context, in *pb.Currenc
 	exchange, err := h.db.GetRateBetween(in.FromCurrency, in.ToCurrency)
 	h.logger.Sugar().Debug(exchange)
 	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			h.logger.Error(err.Error())
+		if errors.Is(err, storages.ErrNotFound) {
+			return &pb.ExchangeRateResponse{}, status.Error(codes.NotFound, err.Error())
 		}
-		return &pb.ExchangeRateResponse{}, status.Error(codes.NotFound, err.Error())
+		h.logger.Error(err.Error())
+		return &pb.ExchangeRateResponse{}, status.Error(codes.Internal, err.Error())
 	}
 
 	res := pb.ExchangeRateResponse{

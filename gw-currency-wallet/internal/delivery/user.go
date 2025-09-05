@@ -9,7 +9,6 @@ import (
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/validator"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/pkg/utils"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type loginJSON struct {
@@ -121,8 +120,8 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 	err = h.Models.Users.FindUser(user)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.UnauthorizedResponse(w, "not allowed")
+		if errors.Is(err, storages.ErrRecordNotFound) {
+			utils.UnauthorizedResponse(w, "Invalid username or password")
 		} else {
 			h.Logger.Error("Ошибка получения пользователя из базы данных: ", err)
 			utils.InternalErrorResponse(w)
@@ -152,7 +151,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 	h.Logger.Debugf("Выдан JST %s", jwtBytes)
 
-	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"authentication_token": string(jwtBytes)}, nil)
+	err = utils.WriteJSON(w, http.StatusOK, utils.JSONEnveloper{"authorization_token": string(jwtBytes)}, nil)
 	if err != nil {
 		h.Logger.Errorf("Ошибка формирования json: %v", err)
 		utils.InternalErrorResponse(w)

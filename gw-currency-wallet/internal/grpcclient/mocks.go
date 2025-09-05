@@ -8,9 +8,9 @@ import (
 )
 
 var Rates = map[string]float32{
-	"rub->usd": 0.04,
+	"rub->usd": 0.4,
 	"usd->rub": 85,
-	"rub->eur": 0.03,
+	"rub->eur": 0.4,
 	"eur->rub": 93,
 	"usd->eur": 0.8,
 	"eur->usd": 1.4,

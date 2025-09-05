@@ -33,3 +33,7 @@ func NewHandler(m *storages.Models, logger *zap.SugaredLogger, exchangeClient pb
 		exchangeCache:  cache.New[string, []ExchangeCachedItem](),
 	}
 }
+
+func (h *Handler) UnpackJSON() {
+
+}

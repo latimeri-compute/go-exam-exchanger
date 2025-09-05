@@ -10,15 +10,19 @@
 services:
   server:
     container_name: gw-exchanger
+    restart: unless-stopped
     build:
       context: .
       target: final
+    networks:
+      - exchange
     env_file:
       - config.env
     ports:
-      - 4000:4000
+      - 4000:443
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
@@ -35,11 +39,21 @@ services:
       - config.env
     volumes:
       - ./internal/storages/postgres/database_setup:/docker-entrypoint-initdb.d
+    networks:
+      - exchange
     ports:
       - 5430:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "exchanger"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 volumes:
-  db-data:
+  exchanger-data:
 secrets:
   db-password:
     file: db/password.txt
-
+networks:
+  exchange:
+      name: exchange

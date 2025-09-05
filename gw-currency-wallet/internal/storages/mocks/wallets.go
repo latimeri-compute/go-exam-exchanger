@@ -14,9 +14,9 @@ var ValidWallet = storages.Wallet{
 		UpdatedAt: time.Now(),
 		CreatedAt: time.Now(),
 	},
-	UsdBalance: 0,
-	RubBalance: 0,
-	EurBalance: 0,
+	UsdBalance: 10000,
+	RubBalance: 10000,
+	EurBalance: 10000,
 }
 
 type MockWallets struct{}
@@ -74,15 +74,13 @@ func (n *MockWallets) ExchangeBetweenCurrency(id uint, amount int, rate int, fro
 	wallet.UsdBalance = 10000
 	wallet.EurBalance = 10000
 
-	// uhhhh в принципе я не думаю, что в моках нужно учитывать курс;
-	// он только усложняет проверку родительских методов
 	switch strings.ToLower(toCurrency) {
 	case "rub":
-		wallet.RubBalance += int64(amount)
+		wallet.RubBalance += int64(amount * rate)
 	case "usd":
-		wallet.UsdBalance += int64(amount)
+		wallet.UsdBalance += int64(amount * rate)
 	case "eur":
-		wallet.EurBalance += int64(amount)
+		wallet.EurBalance += int64(amount * rate)
 	default:
 		panic("ExchangeBetweenCurrency: валюта не поддерживается")
 	}

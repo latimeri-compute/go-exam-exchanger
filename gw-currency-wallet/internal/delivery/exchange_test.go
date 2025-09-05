@@ -32,7 +32,7 @@ func TestGetRates(t *testing.T) {
 		{
 			name:       "несуществующий пользователь",
 			userId:     99,
-			wantBody:   `{"error":"unauthorized, check your token"}`,
+			wantBody:   `{"error":"Unauthorized"}`,
 			wantStatus: http.StatusUnauthorized,
 		},
 	}

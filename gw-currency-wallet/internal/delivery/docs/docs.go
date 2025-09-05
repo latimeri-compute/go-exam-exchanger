@@ -32,7 +32,7 @@ const docTemplate = `{
                         "type": "string",
                         "example": "\"BEARER {JWT}\"",
                         "description": "JWT",
-                        "name": "Authentication",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     }
@@ -70,9 +70,18 @@ const docTemplate = `{
                         "type": "string",
                         "example": "\"BEARER {JWT}\"",
                         "description": "JWT",
-                        "name": "Authentication",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "top up request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/delivery.fundsRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -108,7 +117,7 @@ const docTemplate = `{
                         "type": "string",
                         "example": "\"BEARER {JWT}\"",
                         "description": "JWT",
-                        "name": "Authentication",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
@@ -161,7 +170,7 @@ const docTemplate = `{
                         "type": "string",
                         "example": "\"BEARER {JWT}\"",
                         "description": "JWT",
-                        "name": "Authentication",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     }
@@ -295,9 +304,18 @@ const docTemplate = `{
                         "type": "string",
                         "example": "\"BEARER {JWT}\"",
                         "description": "JWT",
-                        "name": "Authentication",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "withdrawal request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/delivery.fundsRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -342,13 +360,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "EUR": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 10
                 },
                 "RUB": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 45.5
                 },
                 "USD": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 120
                 }
             }
         },
@@ -403,6 +424,20 @@ const docTemplate = `{
                 },
                 "new_balance": {
                     "$ref": "#/definitions/delivery.balance"
+                }
+            }
+        },
+        "delivery.fundsRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 234.56
+                },
+                "currency": {
+                    "description": "(USD, RUB, EUR)",
+                    "type": "string",
+                    "example": "rub"
                 }
             }
         },

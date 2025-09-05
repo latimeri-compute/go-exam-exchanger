@@ -2,15 +2,14 @@ package delivery
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/pkg/testutils"
 	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
-	"gorm.io/gorm"
+	"github.com/stretchr/testify/assert"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -51,13 +50,8 @@ func TestGetExchangeRates(t *testing.T) {
 			defer cancel()
 
 			resp, err := client.GetExchangeRates(ctx, &pb.Empty{}, grpc.EmptyCallOption{})
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !reflect.DeepEqual(resp.Rates, test.want) {
-				t.Errorf("got: %v, want: %v", resp.Rates, test.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, resp.Rates, test.want)
 		})
 	}
 }
@@ -94,7 +88,7 @@ func TestGetExchangeRateForCurrency(t *testing.T) {
 			fromCurrency: "sda",
 			toCurrency:   "what",
 			rate:         00,
-			wantError:    status.Error(codes.NotFound, gorm.ErrRecordNotFound.Error()),
+			wantError:    status.Error(codes.NotFound, storages.ErrNotFound.Error()),
 		},
 	}
 	for _, test := range tests {
@@ -107,19 +101,12 @@ func TestGetExchangeRateForCurrency(t *testing.T) {
 				ToCurrency:   test.toCurrency,
 			}
 			resp, err := client.GetExchangeRateForCurrency(ctx, mes, grpc.EmptyCallOption{})
-			if err != nil && !errors.Is(err, test.wantError) {
-				t.Errorf("got error: %v, want: %v", err, test.wantError)
-			}
-
-			if test.wantError == nil && (resp.FromCurrency != test.fromCurrency ||
-				resp.ToCurrency != test.toCurrency ||
-				resp.Rate != test.rate) {
-				w := receivedExchange{
-					ToValuteCode:   test.toCurrency,
-					FromValuteCode: test.fromCurrency,
-					Rate:           test.rate,
-				}
-				t.Errorf("got: %v, want: %v", resp, w)
+			if test.wantError != nil {
+				assert.ErrorIs(t, err, test.wantError)
+			} else {
+				assert.Equal(t, test.fromCurrency, resp.FromCurrency)
+				assert.Equal(t, test.toCurrency, resp.ToCurrency)
+				assert.Equal(t, test.rate, resp.Rate)
 			}
 		})
 	}

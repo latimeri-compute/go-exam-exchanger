@@ -12,10 +12,13 @@ definitions:
   delivery.balanceResponse:
     properties:
       EUR:
+        example: 10
         type: number
       RUB:
+        example: 45.5
         type: number
       USD:
+        example: 120
         type: number
     type: object
   delivery.errorInsufficientFunds:
@@ -52,6 +55,16 @@ definitions:
         type: string
       new_balance:
         $ref: '#/definitions/delivery.balance'
+    type: object
+  delivery.fundsRequest:
+    properties:
+      amount:
+        example: 234.56
+        type: number
+      currency:
+        description: (USD, RUB, EUR)
+        example: rub
+        type: string
     type: object
   delivery.loginJSON:
     properties:
@@ -93,7 +106,7 @@ paths:
       - description: JWT
         example: '"BEARER {JWT}"'
         in: header
-        name: Authentication
+        name: Authorization
         required: true
         type: string
       produces:
@@ -118,9 +131,15 @@ paths:
       - description: JWT
         example: '"BEARER {JWT}"'
         in: header
-        name: Authentication
+        name: Authorization
         required: true
         type: string
+      - description: top up request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/delivery.fundsRequest'
       produces:
       - application/json
       responses:
@@ -143,7 +162,7 @@ paths:
       - description: JWT
         example: '"BEARER {JWT}"'
         in: header
-        name: Authentication
+        name: Authorization
         required: true
         type: string
       - description: Exchange funds request
@@ -178,7 +197,7 @@ paths:
       - description: JWT
         example: '"BEARER {JWT}"'
         in: header
-        name: Authentication
+        name: Authorization
         required: true
         type: string
       produces:
@@ -265,9 +284,15 @@ paths:
       - description: JWT
         example: '"BEARER {JWT}"'
         in: header
-        name: Authentication
+        name: Authorization
         required: true
         type: string
+      - description: withdrawal request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/delivery.fundsRequest'
       produces:
       - application/json
       responses:

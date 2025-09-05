@@ -16,7 +16,7 @@ import (
 )
 
 type ServerGRPC struct {
-	Logger *zap.Logger
+	Logger *zap.SugaredLogger
 	Server *grpc.Server
 	cfg    Config
 }
@@ -32,7 +32,7 @@ func New(logger *zap.Logger, db storages.ExchangerModelInterface, cfg Config) *S
 	pb.RegisterExchangeServiceServer(srv, ex)
 
 	return &ServerGRPC{
-		Logger: logger,
+		Logger: logger.Sugar(),
 		Server: srv,
 		cfg:    cfg,
 	}
@@ -44,7 +44,7 @@ func (srv *ServerGRPC) StartServer() error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		signal := <-quit
 
-		srv.Logger.Sugar().Info("остановка сервера", "сигнал", signal.String())
+		srv.Logger.Info("остановка сервера, сигнал: ", signal.String())
 		srv.Server.GracefulStop()
 	}()
 
@@ -54,6 +54,7 @@ func (srv *ServerGRPC) StartServer() error {
 	}
 	defer listen.Close()
 
+	srv.Logger.Info("Запуск сервера: ", listen.Addr().String())
 	err = srv.Server.Serve(listen)
 	if !errors.Is(err, grpc.ErrServerStopped) {
 		return err

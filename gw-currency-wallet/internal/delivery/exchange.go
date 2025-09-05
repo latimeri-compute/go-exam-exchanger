@@ -29,7 +29,7 @@ type exchangeRequest struct {
 //	@Tags		exchange
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
 //	@Success	200				{object}	string								"Returns exchange rates"
 //	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/exchange/rates [get]
@@ -70,14 +70,14 @@ func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 }
 
 type balance struct {
-	RUB float64 `json:"RUB"`
-	USD float64 `json:"USD"`
-	EUR float64 `json:"EUR"`
+	RUB utils.Currency `json:"RUB"`
+	USD utils.Currency `json:"USD"`
+	EUR utils.Currency `json:"EUR"`
 }
 type exchangeResponse struct {
-	Message         string  `json:"message"`
-	ExchangedAmount float64 `json:"exchanged_amount"`
-	NewBalance      balance `json:"new_balance"`
+	Message         string         `json:"message"`
+	ExchangedAmount utils.Currency `json:"exchanged_amount"`
+	NewBalance      balance        `json:"new_balance"`
 }
 
 // ExchangeFunds
@@ -87,7 +87,7 @@ type exchangeResponse struct {
 //	@Tags		exchange
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authentication	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
 //	@Param		request			body		delivery.exchangeRequest			true	"Exchange funds request"
 //	@Success	200				{object}	delivery.exchangeResponse			"Returns updated balance and exchanged amount"
 //	@Failure	400				{object}	delivery.errorInsufficientFunds		"Insufficient funds or invalid currencies"
@@ -147,9 +147,11 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Logger.Debug("wallet Id: ", user.Wallet.ID)
+	exchangedAmount := utils.Currency(receivedJson.Amount * float64(rate/100))
+	h.Logger.Debug("exchangedAmount: ", exchangedAmount)
+	h.Logger.Debug("wallet Id: ", user.WalletID)
 	amount := utils.Abs(int(math.Round(receivedJson.Amount * 100)))
-	wallet, err := h.Models.Wallets.ExchangeBetweenCurrency(user.Wallet.ID, amount, int(rate), fromCurrency, toCurrency)
+	wallet, err := h.Models.Wallets.ExchangeBetweenCurrency(user.WalletID, amount, int(rate), fromCurrency, toCurrency)
 	if err != nil {
 		if errors.Is(err, storages.ErrLessThanZero) {
 			h.Logger.Debug("Недостаточный баланс: ", err)
@@ -160,9 +162,6 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	exchangedAmount := float64(amount) * float64(rate) / 100
-	h.Logger.Debug(exchangedAmount)
 
 	go func() {
 		if exchangedAmount >= 30_000 || amount >= 30_000_00 {
@@ -186,11 +185,11 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.WriteJSON(w, http.StatusOK, exchangeResponse{
 		Message:         "Exchange successful",
-		ExchangedAmount: exchangedAmount, // TODO почему не работает..
+		ExchangedAmount: exchangedAmount,
 		NewBalance: balance{
-			USD: float64(wallet.UsdBalance),
-			RUB: float64(wallet.RubBalance),
-			EUR: float64(wallet.EurBalance),
+			USD: utils.Currency(float64(wallet.UsdBalance) / 100),
+			RUB: utils.Currency(float64(wallet.RubBalance) / 100),
+			EUR: utils.Currency(float64(wallet.EurBalance) / 100),
 		},
 	}, nil)
 	if err != nil {

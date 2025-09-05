@@ -4,7 +4,7 @@ CREATE TABLE valutes(
     full_name varchar(255) NOT NULL,
     PRIMARY KEY(id)
 );
-CREATE UNIQUE INDEX unique_code ON public.valutes USING btree (code);
+CREATE UNIQUE INDEX unique_code ON valutes USING btree (code);
 
 INSERT INTO valutes (code, full_name) VALUES
 ('rub', 'Russian Ruble'),
@@ -22,9 +22,8 @@ CREATE TABLE exchanges(
     CONSTRAINT exchange_from_valute_id_fkey FOREIGN key(from_valute_id) REFERENCES valutes(id),
     CONSTRAINT exchange_to_valute_id_fkey FOREIGN key(to_valute_id) REFERENCES valutes(id)
 );
-CREATE UNIQUE INDEX unique_combo ON public.exchange USING btree (from_valute_id, to_valute_id);
-
-INSERT INTO exchanges (from_valute_id, to_valute_id, rate) VALUES
+CREATE UNIQUE INDEX unique_combo ON exchanges USING btree (from_valute_id, to_valute_id);
+INSERT INTO exchanges(from_valute_id, to_valute_id, rate) VALUES
 (2, 1, 803466),
 (3, 1, 935604),
 (1, 2, 124),
