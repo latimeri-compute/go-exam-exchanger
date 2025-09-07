@@ -8,57 +8,53 @@ import (
 	"os/signal"
 	"syscall"
 
-	pb "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery/exchange"
-	delivery "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery/response"
+	delivery "github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/delivery"
+	"github.com/latimeri-compute/go-exam-exchanger/gw-exchanger/internal/storages"
+	pb "github.com/latimeri-compute/go-exam-exchanger/proto-exchange/exchange"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 type ServerGRPC struct {
-	Logger *zap.Logger
+	Logger *zap.SugaredLogger
 	Server *grpc.Server
-	Cfg    Config
+	cfg    Config
 }
 
 type Config struct {
 	Port int
+	Host string
 }
 
-func New(logger *zap.Logger, port int) *ServerGRPC {
+func New(logger *zap.Logger, db storages.ExchangerModelInterface, cfg Config) *ServerGRPC {
 	srv := grpc.NewServer()
-	ex := delivery.NewHandler(logger)
+	ex := delivery.NewHandler(logger, db)
 	pb.RegisterExchangeServiceServer(srv, ex)
 
 	return &ServerGRPC{
-		Logger: logger,
+		Logger: logger.Sugar(),
 		Server: srv,
+		cfg:    cfg,
 	}
 }
 
 func (srv *ServerGRPC) StartServer() error {
 	go func() {
-		// create a quit channel
 		quit := make(chan os.Signal, 1)
-
-		// listen for incoming SIGINT and SIGTERM
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
-		// read signal from the quit channel. Will block until signal is received
 		signal := <-quit
 
-		srv.Logger.Sugar().Info("shutting down server", "signal", signal.String())
-
+		srv.Logger.Info("остановка сервера, сигнал: ", signal.String())
 		srv.Server.GracefulStop()
-
 	}()
 
-	listen, err := net.Listen("tcp", fmt.Sprintf(":%d", srv.Cfg.Port))
+	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", srv.cfg.Host, srv.cfg.Port))
 	if err != nil {
 		return err
 	}
 	defer listen.Close()
 
-	srv.Logger.Info("Запуск сервера")
+	srv.Logger.Info("Запуск сервера: ", listen.Addr().String())
 	err = srv.Server.Serve(listen)
 	if !errors.Is(err, grpc.ErrServerStopped) {
 		return err
@@ -66,46 +62,3 @@ func (srv *ServerGRPC) StartServer() error {
 
 	return nil
 }
-
-// 	go func() {
-// 		// create a quit channel
-// 		quit := make(chan os.Signal, 1)
-
-// 		// listen for incoming SIGINT and SIGTERM
-// 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
-// 		// read signal from the quit channel. Will block until signal is received
-// 		s := <-quit
-
-// 		app.logger.Info("shutting down server", "signal", s.String())
-
-// 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-// 		defer cancel()
-
-// 		err := srv.Shutdown(ctx)
-// 		if err != nil {
-// 			shutdownError <- err
-// 		}
-
-// 		app.logger.Info("completing background tasks", "addr", srv.Addr)
-
-// 		app.waitgroup.Wait()
-// 		shutdownError <- nil
-// 	}()
-
-// 	app.logger.Info("starting server", "addr", srv.Addr, "env", app.config.env)
-
-// 	err := srv.ListenAndServe()
-// 	if !errors.Is(err, http.ErrServerClosed) {
-// 		return err
-// 	}
-
-// 	err = <-shutdownError
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	app.logger.Info("stopped server", "addr", srv.Addr)
-
-// 	return nil
-// }

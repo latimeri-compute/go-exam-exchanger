@@ -1,0 +1,69 @@
+services:
+  kafka:
+    container_name: kafka
+    image: apache/kafka-native
+    networks:
+      - exchange
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test:   ["CMD-SHELL", "echo stat | nc -z kafka 9093"]
+      interval: 1s
+      timeout: 60s
+      start_period: 30s
+      retries: 5
+    environment:
+      # Configure listeners for both docker and host communication
+      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+
+      # Settings required for KRaft mode
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
+
+      # Listener to use for broker-to-broker communication
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+
+      # Required for a single node cluster
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  mongodb:
+    container_name: mongodb
+    image: mongo:8.0.13
+    restart: always
+    networks:
+      - exchange
+    environment:
+      - MONGO_PORT=27017
+    env_file:
+      - config.env
+    ports:
+      - 27016:27017
+    healthcheck:
+      test:  ["CMD-SHELL", "echo 'db.runCommand(\u0134ping\u0134).ok' | mongosh mongodb/wallets", "--quiet"]
+      interval: 15s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+  gw-notification:
+    build:
+      context: .
+      target: final
+    env_file:
+      - config.env
+    networks:
+      - exchange
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    ports:
+      - 4030:4030
+volumes:
+   mongo-data:
+networks:
+  exchange:
+    name: exchange
