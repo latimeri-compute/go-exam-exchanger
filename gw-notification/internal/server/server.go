@@ -14,16 +14,17 @@ import (
 )
 
 type Server struct {
-	Consumer     *brocker.ConsumerGroup
-	Transactions storages.WalletModelInterface
+	consumer     *brocker.ConsumerGroup
+	transactions storages.WalletModelInterface
 	logger       *zap.SugaredLogger
 	wg           sync.WaitGroup
 }
 
-func New(consumer *brocker.ConsumerGroup, transactions storages.WalletModelInterface) *Server {
+func New(consumer *brocker.ConsumerGroup, transactions storages.WalletModelInterface, logger *zap.SugaredLogger) *Server {
 	return &Server{
-		Consumer:     consumer,
-		Transactions: transactions,
+		consumer:     consumer,
+		transactions: transactions,
+		logger:       logger,
 	}
 }
 
@@ -38,7 +39,7 @@ func (s *Server) Start() {
 		s.logger.Infof("Получен сигнал: %s; Остановка приложения...", signal.String())
 
 		s.wg.Wait()
-		err := s.Consumer.Group.Close()
+		err := s.consumer.Group.Close()
 		if err != nil {
 			shutdownError <- err
 		}
@@ -47,16 +48,17 @@ func (s *Server) Start() {
 
 	exchangeCh := make(chan storages.Transaction)
 
-	go s.Consumer.Consume(exchangeCh, []string{}, context.Background())
+	topics := []string{"wallets_transactions"}
+	go s.consumer.Consume(exchangeCh, topics, context.Background())
 
 	for transaction := range exchangeCh {
 		s.wg.Add(1)
 		go func() {
 			defer s.wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 			defer cancel()
 
-			_, err := s.Transactions.Insert(transaction, ctx)
+			_, err := s.transactions.InsertTransaction(transaction, ctx)
 			if err != nil {
 				s.logger.DPanic("Ошибка добавления документа в базу данных: ", err)
 				s.logger.Error("Ошибка добавления документа в базу данных: ", err)

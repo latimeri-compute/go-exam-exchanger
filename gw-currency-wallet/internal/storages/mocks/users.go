@@ -16,6 +16,7 @@ var (
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
+		Username: "admin",
 		Email:    "admin@admin.admin",
 		WalletID: 1,
 		Wallet:   ValidWallet,
@@ -35,8 +36,11 @@ func (m *MockUsers) FindUser(user *storages.User) error {
 	if err != nil {
 		panic(err)
 	}
-	if user.Email == ValidUser.Email || user.ID == ValidUser.ID {
+	if user.Email == ValidUser.Email ||
+		user.ID == ValidUser.ID ||
+		user.Username == ValidUser.Username {
 		user.ID = ValidUser.ID
+		user.Username = ValidUser.Username
 		user.Email = ValidUser.Email
 		user.Model = ValidUser.Model
 		user.Wallet = ValidUser.Wallet

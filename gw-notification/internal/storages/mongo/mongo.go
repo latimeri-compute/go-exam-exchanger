@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"time"
 
 	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/internal/storages"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-notification/utils"
@@ -18,6 +19,12 @@ func NewConnection(uri string) (*mongo.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -27,9 +34,12 @@ func NewWalletClient(client *mongo.Client) *WalletClient {
 	return &WalletClient{coll}
 }
 
-func (c *WalletClient) Insert(transaction storages.Transaction, ctx context.Context) (any, error) {
-	res, err := c.InsertOne(ctx, transaction)
-	return res.InsertedID, err
+func (c *WalletClient) InsertTransaction(transaction storages.Transaction, ctx context.Context) (any, error) {
+	res, err := c.InsertOne(ctx, transaction, options.InsertOne())
+	if err != nil {
+		return "", err
+	}
+	return res.InsertedID, nil
 }
 
 func (c *WalletClient) Get(transaction storages.Transaction, ctx context.Context) ([]storages.Transaction, error) {

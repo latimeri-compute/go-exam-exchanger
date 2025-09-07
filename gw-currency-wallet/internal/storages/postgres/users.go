@@ -41,7 +41,7 @@ func (m *UserModel) CreateUser(user *storages.User) error {
 }
 
 func (m *UserModel) FindUser(user *storages.User) error {
-	err := m.DB.Where("email = ? OR id = ?", user.Email, user.ID).First(user).Error
+	err := m.DB.Where("email = ? OR id = ? OR username = ?", user.Email, user.ID, user.Username).First(user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return storages.ErrRecordNotFound
 	}

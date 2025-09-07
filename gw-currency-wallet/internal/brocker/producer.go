@@ -35,13 +35,13 @@ func New(address string) (*Producer, error) {
 	return &Producer{producer}, nil
 }
 
-func (p *Producer) MessageTransaction(topic string, transaction TransactionMessage) (partition int32, offset int64, err error) {
+func (p *Producer) MessageTransaction(transaction TransactionMessage) (partition int32, offset int64, err error) {
 	v, err := json.Marshal(transaction)
 	if err != nil {
 		return 0, 0, err
 	}
 	msg := &sarama.ProducerMessage{
-		Topic: topic,
+		Topic: "wallets_transactions",
 		Value: sarama.StringEncoder(v),
 	}
 

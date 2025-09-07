@@ -49,7 +49,7 @@ func TestInsert(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
-			id, err := m.Insert(test.transaction, ctx)
+			id, err := m.InsertTransaction(test.transaction, ctx)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, id)
 		})

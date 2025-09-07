@@ -9,7 +9,7 @@ import (
 var ErrNotFound = errors.New("Document not found")
 
 type WalletModelInterface interface {
-	Insert(transaction Transaction, ctx context.Context) (any, error)
+	InsertTransaction(transaction Transaction, ctx context.Context) (any, error)
 	Get(transaction Transaction, ctx context.Context) ([]Transaction, error)
 }
 

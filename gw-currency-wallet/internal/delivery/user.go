@@ -12,7 +12,7 @@ import (
 )
 
 type loginJSON struct {
-	Email    string `json:"email" example:"test@test.com"`
+	Username string `json:"username" example:"admin"`
 	Password string `json:"password" example:"pa$$word"`
 }
 
@@ -47,7 +47,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debugf("Получена попытка регистрации в системе: %v", receivedJson)
 
 	v := validator.NewValidator()
-	validator.ValidateUser(v, receivedJson.Email, receivedJson.Password)
+	v.ValidateUserRegister(receivedJson.Email, receivedJson.Username, receivedJson.Password)
 	if !v.Valid() {
 		utils.BadRequestResponse(w, v.Errors)
 		return
@@ -109,14 +109,14 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debugf("Получена попытка входа в систему: %v\n", receivedJson)
 
 	v := validator.NewValidator()
-	validator.ValidateUser(v, receivedJson.Email, receivedJson.Password)
+	v.ValidateUserLogin(receivedJson.Username, receivedJson.Password)
 	if !v.Valid() {
 		utils.BadRequestResponse(w, v.Errors)
 		return
 	}
 
 	user := &storages.User{
-		Email: receivedJson.Email,
+		Username: receivedJson.Username,
 	}
 	err = h.Models.Users.FindUser(user)
 	if err != nil {

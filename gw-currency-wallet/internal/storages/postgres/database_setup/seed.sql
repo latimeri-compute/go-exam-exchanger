@@ -28,5 +28,6 @@ CREATE TABLE IF NOT EXISTS users(
     CONSTRAINT fk_users_wallet FOREIGN key(wallet_id) REFERENCES wallets(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uni_users_email ON users USING btree (email);
+CREATE UNIQUE INDEX IF NOT EXISTS uni_users_username ON users USING btree (username);
 CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users USING btree (deleted_at);
 CREATE UNIQUE INDEX IF NOT EXISTS uni_users_username ON users USING btree (username);

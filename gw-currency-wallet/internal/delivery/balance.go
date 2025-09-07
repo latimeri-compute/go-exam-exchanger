@@ -171,7 +171,7 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 				Timestamp:    wallet.UpdatedAt,
 			}
 
-			_, _, err := h.messenger.MessageTransaction("wallets_transactions", mes)
+			_, _, err := h.messenger.MessageTransaction(mes)
 			if err != nil {
 				h.Logger.DPanic(err)
 				h.Logger.Error("Ошибка отправления сообщения: ", err)

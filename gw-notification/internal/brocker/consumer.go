@@ -14,7 +14,7 @@ type ConsumerGroup struct {
 	logger *zap.SugaredLogger
 }
 
-func NewConnection(addr []string) (*ConsumerGroup, error) {
+func NewConnection(addr []string, logger *zap.SugaredLogger) (*ConsumerGroup, error) {
 
 	cfg := sarama.NewConfig()
 	cfg.Consumer.Return.Errors = true
@@ -25,20 +25,19 @@ func NewConnection(addr []string) (*ConsumerGroup, error) {
 		return nil, err
 	}
 
-	return &ConsumerGroup{Group: con}, err
+	return &ConsumerGroup{Group: con, logger: logger}, err
 }
 
 func (c *ConsumerGroup) Consume(receiver chan storages.Transaction, topics []string, ctx context.Context) {
 	consumer := newConsumer(c.logger, receiver)
 	for {
-		// TODO написать клэймы
 		if err := c.Group.Consume(ctx, topics, consumer); err != nil {
 			if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 				c.logger.Info("Consumer group closed")
 				return
 			} else {
-				c.logger.DPanic(err)
-				c.logger.Error(err)
+				c.logger.Panic(err)
+				// c.logger.Error(err)
 			}
 		}
 		if ctx.Err() != nil {

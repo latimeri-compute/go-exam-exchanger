@@ -78,7 +78,7 @@ func main() {
 		sugar.Error("ошибка соединения с удалённым сервером обмена валют: ", err)
 	}
 
-	messageProducer, err := brocker.New(":9092")
+	messageProducer, err := brocker.New("kafka:9093")
 	if err != nil {
 		sugar.Error("Ошибка создания продюсера сообщений: ", err)
 	}

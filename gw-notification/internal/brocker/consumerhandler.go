@@ -51,14 +51,14 @@ func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 			c.logger.Info("получено сообщение: ", &mes)
 
-			var transaction *storages.Transaction
+			var transaction storages.Transaction
 			err := json.Unmarshal(mes.Value, &transaction)
 			if err != nil {
 				c.logger.Error("Ошибка анмаршиллинга: ", err)
 				continue
 			}
 
-			c.transactionsExchange <- *transaction
+			c.transactionsExchange <- transaction
 			// стоит ли помечать в случае ошибки добавления в бд?..
 			session.MarkMessage(mes, "")
 
