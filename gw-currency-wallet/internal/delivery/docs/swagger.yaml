@@ -68,11 +68,11 @@ definitions:
     type: object
   delivery.loginJSON:
     properties:
-      email:
-        example: test@test.com
-        type: string
       password:
         example: pa$$word
+        type: string
+      username:
+        example: admin
         type: string
     type: object
   delivery.messageResponse:

@@ -444,13 +444,13 @@ const docTemplate = `{
         "delivery.loginJSON": {
             "type": "object",
             "properties": {
-                "email": {
-                    "type": "string",
-                    "example": "test@test.com"
-                },
                 "password": {
                     "type": "string",
                     "example": "pa$$word"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "admin"
                 }
             }
         },
