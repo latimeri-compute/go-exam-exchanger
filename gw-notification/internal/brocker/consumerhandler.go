@@ -27,20 +27,16 @@ func newConsumer(logger *zap.SugaredLogger, transactionsExchange chan storages.T
 }
 
 func (c *consumer) Setup(sarama.ConsumerGroupSession) error {
-
-	//TODO
 	c.logger.Info("Message consumers set up!")
 	return nil
 }
 
 func (c *consumer) Cleanup(sarama.ConsumerGroupSession) error {
-	//TODO
 	c.logger.Info("Message consumers cleaned!")
 	return nil
 }
 
 func (c *consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	//TODO
 	for {
 		select {
 		case mes, ok := <-claim.Messages():

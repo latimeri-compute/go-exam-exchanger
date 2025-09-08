@@ -30,10 +30,10 @@ type registerJSON struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		credentials	body		delivery.registerJSON		true	"Credentials"
-//	@Success	201			{object}	delivery.messageResponse	"User created"
-//	@Failure	400			{object}	delivery.errorResponse		"Username or email already exists"
-//	@Failure	400			{object}	delivery.errorResponse		"JSON fields didn't pass validation"
-//	@Failure	422			{object}	delivery.errorResponse		"Malformed json or invalid fields"
+//	@Success	201			{object}	swagger.ExampleUserCreated	"User created"
+//	@Failure	400			{object}	swagger.ErrUserEmailExists	"Username or email already exists"	example("Username or email already exists")
+//	@Failure	400			{object}	swagger.ErrorResponse		"JSON fields didn't pass validation"
+//	@Failure	422			{object}	swagger.ErrorResponse		"Malformed json or invalid fields"
 //	@Router		/register [post]
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var receivedJson registerJSON
@@ -91,11 +91,11 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 //	@Tags		users
 //	@Accept		json
 //	@Produce	json
-//	@Param		credentials	body		delivery.loginJSON			true	"Credentials"
-//	@Success	200			{object}	delivery.messageResponse	"Successfully logged in"
-//	@Failure	400			{object}	delivery.errorResponse		"JSON fields didn't pass validation"
-//	@Failure	401			{object}	delivery.errorResponse		"Invalid credentials"
-//	@Failure	422			{object}	delivery.errorResponse		"Malformed json or invalid fields"
+//	@Param		credentials	body		delivery.loginJSON					true	"Credentials"
+//	@Success	200			{object}	swagger.ReturnToken					"Successfully logged in"
+//	@Failure	400			{object}	swagger.ErrorResponse				"JSON fields didn't pass validation"
+//	@Failure	401			{object}	swagger.ErrorInvalidUserPassword	"Invalid credentials"
+//	@Failure	422			{object}	swagger.ErrorResponse				"Malformed json or invalid fields"
 //	@Router		/login [post]
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var receivedJson loginJSON

@@ -43,7 +43,6 @@ func main() {
 	consumer, err := brocker.NewConnection(producerAddr, sugar)
 	if err != nil {
 		sugar.Error("Ошибка соединения с брокером: ", err)
-		logger.Error(err.Error())
 		return
 	}
 	defer consumer.Group.Close()
