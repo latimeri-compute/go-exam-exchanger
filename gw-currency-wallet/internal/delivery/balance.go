@@ -30,9 +30,9 @@ type balanceResponse struct {
 //	@Tags		balance
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
 //	@Success	200				{object}	delivery.balanceResponse			"Returns balance"
-//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/balance [get]
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value("user").(storages.User)
@@ -69,10 +69,11 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 //	@Tags		balance
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
+//	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
 //	@Param		request			body		delivery.fundsRequest				true	"top up request"
-//	@Success	200				{object}	string								"returns updated balance"
-//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Success	200				{object}	swagger.ReturnUpdatedBalance		"returns updated balance"
+//	@Failure	400				{object}	swagger.ErrorResponse				"Incomplete request, malformed JSON or disallowed fields"
+//	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/deposit [post]
 func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("Получен JST ", r.Header.Get("Authorization"))
@@ -105,12 +106,13 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 //	@Tags		balance
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")	example("BEARER %jwt%")
+//	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
 //	@Param		request			body		delivery.fundsRequest				true	"withdrawal request"
-//	@Success	200				{object}	string								"returns updated balance"
-//	@Failure	400				{object}	delivery.errorInsufficientFunds		"Insufficient funds or invalid currencies"
-//	@Failure	400				{object}	delivery.errorResponse				""
-//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Success	200				{object}	swagger.ReturnUpdatedBalance		"returns updated balance"
+//	@Failure	400				{object}	swagger.ErrorInsufficientFunds		"Insufficient funds or invalid currencies"
+//	@Failure	400				{object}	swagger.ErrorResponse				"JSON fields didn't pass validation"
+//	@Failure	422				{object}	swagger.ErrorResponse				"Incomplete request, malformed JSON or disallowed fields"
+//	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/withdraw [post]
 func (h *Handler) WithdrawFromBalance(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Debug("Получен JST ", r.Header.Get("Authorization"))

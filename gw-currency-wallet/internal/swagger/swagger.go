@@ -1,23 +1,25 @@
-package delivery
+package swagger
 
-type errorResponse struct {
+type ErrorResponse struct {
 	Err string `json:"error"`
 }
 
-type errorUnauthorizedResponse struct {
+type ErrorUnauthorizedResponse struct {
 	Err string `json:"error" example:"Unauthorized"`
 }
 
-type errorInsufficientFunds struct {
+type ErrorInsufficientFunds struct {
 	Err string `json:"error" example:"Insufficient funds or invalid currencies"`
 }
 
-type internalErrorResponse struct {
+type InternalErrorResponse struct {
 	Err string `json:"error" example:"Internal error"`
 }
 
-type messageResponse struct {
+type MessageResponse struct {
 	Mes string `json:"message"`
 }
 
-var jwtHead string = "BEARER "
+type ReturnUpdatedBalance struct {
+	Message string
+}

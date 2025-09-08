@@ -68,7 +68,7 @@ func (m *WalletModel) ChangeBalance(id uint, amount int, currency string) (stora
 
 		return nil
 	}, &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
+		Isolation: sql.LevelSerializable,
 	})
 
 	if err != nil {
@@ -112,7 +112,7 @@ func (m *WalletModel) ExchangeBetweenCurrency(id uint, amount int, rate int, fro
 		return nil
 
 	}, &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
+		Isolation: sql.LevelSerializable,
 	})
 
 	if err != nil {

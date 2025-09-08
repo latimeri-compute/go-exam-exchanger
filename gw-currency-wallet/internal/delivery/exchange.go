@@ -31,7 +31,7 @@ type exchangeRequest struct {
 //	@Produce	json
 //	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
 //	@Success	200				{object}	string								"Returns exchange rates"
-//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"
+//	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/exchange/rates [get]
 func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 	rates, ok := h.exchangeCache.Get("all_rates")
@@ -90,8 +90,10 @@ type exchangeResponse struct {
 //	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
 //	@Param		request			body		delivery.exchangeRequest			true	"Exchange funds request"
 //	@Success	200				{object}	delivery.exchangeResponse			"Returns updated balance and exchanged amount"
-//	@Failure	400				{object}	delivery.errorInsufficientFunds		"Insufficient funds or invalid currencies"
-//	@Failure	401				{object}	delivery.errorUnauthorizedResponse	"Invalid credentials"	example(error:Unauthorized)
+//	@Failure	400				{object}	swagger.ErrorInsufficientFunds		"Insufficient funds or invalid currencies"
+//	@Failure	400				{object}	swagger.ErrorResponse				"JSON fields didn't pass validation"
+//	@Failure	422				{object}	swagger.ErrorResponse				"Incomplete request, malformed JSON or disallowed fields"
+//	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/exchange [post]
 func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 	var receivedJson exchangeRequest

@@ -6,8 +6,8 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
-	_ "github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery/docs"
 	"github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/delivery/middleware"
+	_ "github.com/latimeri-compute/go-exam-exchanger/gw-currency-wallet/internal/swagger/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
