@@ -29,9 +29,10 @@ type exchangeRequest struct {
 //	@Tags		exchange
 //	@Accept		json
 //	@Produce	json
-//	@Param		Authorization	header		string								true	"JWT"	example("BEARER {JWT}")
-//	@Success	200				{object}	string								"Returns exchange rates"
+//	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
+//	@Success	200				{object}	swagger.ExampleExchangeRates		"Returns exchange rates"
 //	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
+//	@Failure	500				{object}	swagger.ExampleFailedExchange		"Failed to retrieve exchange rates"
 //	@Router		/exchange/rates [get]
 func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 	rates, ok := h.exchangeCache.Get("all_rates")
@@ -69,18 +70,13 @@ func (h *Handler) GetExchangeRates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type balance struct {
-	RUB utils.Currency `json:"RUB"`
-	USD utils.Currency `json:"USD"`
-	EUR utils.Currency `json:"EUR"`
-}
 type exchangeResponse struct {
-	Message         string         `json:"message"`
-	ExchangedAmount utils.Currency `json:"exchanged_amount"`
-	NewBalance      balance        `json:"new_balance"`
+	Message         string          `json:"message" example:"Exchange successful"`
+	ExchangedAmount utils.Currency  `json:"exchanged_amount" example:"85.00"`
+	NewBalance      balanceResponse `json:"new_balance"`
 }
 
-// ExchangeFunds
+// ExchangeFunds обменивает валюты
 //
 //	@Summary	exchange funds
 //	@Description
@@ -188,7 +184,7 @@ func (h *Handler) ExchangeFunds(w http.ResponseWriter, r *http.Request) {
 	err = utils.WriteJSON(w, http.StatusOK, exchangeResponse{
 		Message:         "Exchange successful",
 		ExchangedAmount: exchangedAmount,
-		NewBalance: balance{
+		NewBalance: balanceResponse{
 			USD: utils.Currency(float64(wallet.UsdBalance) / 100),
 			RUB: utils.Currency(float64(wallet.RubBalance) / 100),
 			EUR: utils.Currency(float64(wallet.EurBalance) / 100),

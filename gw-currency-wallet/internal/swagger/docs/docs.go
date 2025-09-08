@@ -30,7 +30,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"BEARER {JWT}\"",
+                        "example": "\"Bearer {JWT}\"",
                         "description": "JWT",
                         "name": "Authorization",
                         "in": "header",
@@ -41,13 +41,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Returns balance",
                         "schema": {
-                            "$ref": "#/definitions/delivery.balanceResponse"
+                            "$ref": "#/definitions/swagger.ReturnBalance"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorUnauthorizedResponse"
+                            "$ref": "#/definitions/swagger.ErrorUnauthorizedResponse"
                         }
                     }
                 }
@@ -68,7 +68,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"BEARER {JWT}\"",
+                        "example": "\"Bearer {JWT}\"",
                         "description": "JWT",
                         "name": "Authorization",
                         "in": "header",
@@ -88,13 +88,19 @@ const docTemplate = `{
                     "200": {
                         "description": "returns updated balance",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/swagger.ExampleDeposit"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid amount or currency",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrInvalidCurrencyAmount"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorUnauthorizedResponse"
+                            "$ref": "#/definitions/swagger.ErrorUnauthorizedResponse"
                         }
                     }
                 }
@@ -139,15 +145,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Insufficient funds or invalid currencies",
+                        "description": "JSON fields didn't pass validation",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorInsufficientFunds"
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials\"\texample(error:Unauthorized)",
+                        "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorUnauthorizedResponse"
+                            "$ref": "#/definitions/swagger.ErrorUnauthorizedResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Incomplete request, malformed JSON or disallowed fields",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     }
                 }
@@ -168,7 +180,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"BEARER {JWT}\"",
+                        "example": "\"Bearer {JWT}\"",
                         "description": "JWT",
                         "name": "Authorization",
                         "in": "header",
@@ -179,13 +191,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Returns exchange rates",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/swagger.ExampleExchangeRates"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorUnauthorizedResponse"
+                            "$ref": "#/definitions/swagger.ErrorUnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve exchange rates",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ExampleFailedExchange"
                         }
                     }
                 }
@@ -218,25 +236,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully logged in",
                         "schema": {
-                            "$ref": "#/definitions/delivery.messageResponse"
+                            "$ref": "#/definitions/swagger.ReturnToken"
                         }
                     },
                     "400": {
                         "description": "JSON fields didn't pass validation",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorResponse"
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorResponse"
+                            "$ref": "#/definitions/swagger.ErrorInvalidUserPassword"
                         }
                     },
                     "422": {
                         "description": "Malformed json or invalid fields",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorResponse"
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     }
                 }
@@ -269,19 +287,19 @@ const docTemplate = `{
                     "201": {
                         "description": "User created",
                         "schema": {
-                            "$ref": "#/definitions/delivery.messageResponse"
+                            "$ref": "#/definitions/swagger.ExampleUserCreated"
                         }
                     },
                     "400": {
                         "description": "JSON fields didn't pass validation",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorResponse"
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "Malformed json or invalid fields",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorResponse"
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     }
                 }
@@ -302,7 +320,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "\"BEARER {JWT}\"",
+                        "example": "\"Bearer {JWT}\"",
                         "description": "JWT",
                         "name": "Authorization",
                         "in": "header",
@@ -322,19 +340,25 @@ const docTemplate = `{
                     "200": {
                         "description": "returns updated balance",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/swagger.ExampleWithdraw"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "JSON fields didn't pass validation",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorResponse"
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/delivery.errorUnauthorizedResponse"
+                            "$ref": "#/definitions/swagger.ErrorUnauthorizedResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Incomplete request, malformed JSON or disallowed fields",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     }
                 }
@@ -342,20 +366,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "delivery.balance": {
-            "type": "object",
-            "properties": {
-                "EUR": {
-                    "type": "number"
-                },
-                "RUB": {
-                    "type": "number"
-                },
-                "USD": {
-                    "type": "number"
-                }
-            }
-        },
         "delivery.balanceResponse": {
             "type": "object",
             "properties": {
@@ -370,32 +380,6 @@ const docTemplate = `{
                 "USD": {
                     "type": "number",
                     "example": 120
-                }
-            }
-        },
-        "delivery.errorInsufficientFunds": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "Insufficient funds or invalid currencies"
-                }
-            }
-        },
-        "delivery.errorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "delivery.errorUnauthorizedResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "Unauthorized"
                 }
             }
         },
@@ -417,13 +401,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "exchanged_amount": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 85
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Exchange successful"
                 },
                 "new_balance": {
-                    "$ref": "#/definitions/delivery.balance"
+                    "$ref": "#/definitions/delivery.balanceResponse"
                 }
             }
         },
@@ -454,14 +440,6 @@ const docTemplate = `{
                 }
             }
         },
-        "delivery.messageResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "delivery.registerJSON": {
             "type": "object",
             "properties": {
@@ -476,6 +454,166 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "example": "admin"
+                }
+            }
+        },
+        "swagger.ErrInvalidCurrencyAmount": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid amount or currency"
+                }
+            }
+        },
+        "swagger.ErrUserEmailExists": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Username or email already exists"
+                }
+            }
+        },
+        "swagger.ErrorInsufficientFunds": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Insufficient funds or invalid amount"
+                }
+            }
+        },
+        "swagger.ErrorInvalidUserPassword": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid username or password"
+                }
+            }
+        },
+        "swagger.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "swagger.ErrorUnauthorizedResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Unauthorized"
+                }
+            }
+        },
+        "swagger.ExampleDeposit": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Account topped up successfully"
+                }
+            }
+        },
+        "swagger.ExampleExchangeRates": {
+            "type": "object",
+            "properties": {
+                "rates": {
+                    "$ref": "#/definitions/swagger.ExchangeRates"
+                }
+            }
+        },
+        "swagger.ExampleFailedExchange": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Failed to retrieve exchange rates"
+                }
+            }
+        },
+        "swagger.ExampleUserCreated": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "User registered successfully"
+                }
+            }
+        },
+        "swagger.ExampleWithdraw": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Account topped up successfully"
+                }
+            }
+        },
+        "swagger.ExchangeRates": {
+            "type": "object",
+            "properties": {
+                "eur-\u003erub": {
+                    "type": "number",
+                    "example": 6.35
+                },
+                "eur-\u003eusd": {
+                    "type": "number",
+                    "example": 4.35
+                },
+                "rub-\u003eeur": {
+                    "type": "number",
+                    "example": 5.35
+                },
+                "rub-\u003eusd": {
+                    "type": "number",
+                    "example": 0.35
+                },
+                "usd-\u003eeur": {
+                    "type": "number",
+                    "example": 2.35
+                },
+                "usd-\u003erub": {
+                    "type": "number",
+                    "example": 1.35
+                }
+            }
+        },
+        "swagger.ReturnBalance": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "$ref": "#/definitions/swagger.balance"
+                }
+            }
+        },
+        "swagger.ReturnToken": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string",
+                    "example": "JWT_TOKEN"
+                }
+            }
+        },
+        "swagger.balance": {
+            "type": "object",
+            "properties": {
+                "EUR": {
+                    "type": "number",
+                    "example": 10
+                },
+                "RUB": {
+                    "type": "number",
+                    "example": 45.5
+                },
+                "USD": {
+                    "type": "number",
+                    "example": 120
                 }
             }
         }

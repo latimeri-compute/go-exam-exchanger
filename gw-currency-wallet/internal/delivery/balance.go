@@ -31,7 +31,7 @@ type balanceResponse struct {
 //	@Accept		json
 //	@Produce	json
 //	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
-//	@Success	200				{object}	delivery.balanceResponse			"Returns balance"
+//	@Success	200				{object}	swagger.ReturnBalance				"Returns balance"
 //	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/balance [get]
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
@@ -71,8 +71,9 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 //	@Produce	json
 //	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
 //	@Param		request			body		delivery.fundsRequest				true	"top up request"
-//	@Success	200				{object}	swagger.ReturnUpdatedBalance		"returns updated balance"
+//	@Success	200				{object}	swagger.ExampleDeposit				"returns updated balance"
 //	@Failure	400				{object}	swagger.ErrorResponse				"Incomplete request, malformed JSON or disallowed fields"
+//	@Failure	400				{object}	swagger.ErrInvalidCurrencyAmount	"Invalid amount or currency"
 //	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
 //	@Router		/deposit [post]
 func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
@@ -108,8 +109,8 @@ func (h *Handler) TopUpBalance(w http.ResponseWriter, r *http.Request) {
 //	@Produce	json
 //	@Param		Authorization	header		string								true	"JWT"	example("Bearer {JWT}")
 //	@Param		request			body		delivery.fundsRequest				true	"withdrawal request"
-//	@Success	200				{object}	swagger.ReturnUpdatedBalance		"returns updated balance"
-//	@Failure	400				{object}	swagger.ErrorInsufficientFunds		"Insufficient funds or invalid currencies"
+//	@Success	200				{object}	swagger.ExampleWithdraw				"returns updated balance"
+//	@Failure	400				{object}	swagger.ErrorInsufficientFunds		"Insufficient funds or invalid amount"
 //	@Failure	400				{object}	swagger.ErrorResponse				"JSON fields didn't pass validation"
 //	@Failure	422				{object}	swagger.ErrorResponse				"Incomplete request, malformed JSON or disallowed fields"
 //	@Failure	401				{object}	swagger.ErrorUnauthorizedResponse	"Invalid credentials"
@@ -175,7 +176,6 @@ func (h *Handler) ChangeBalance(w http.ResponseWriter, r *http.Request, amount i
 
 			_, _, err := h.messenger.MessageTransaction(mes)
 			if err != nil {
-				h.Logger.DPanic(err)
 				h.Logger.Error("Ошибка отправления сообщения: ", err)
 			}
 		}
